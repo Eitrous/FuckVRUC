@@ -48,4 +48,13 @@ export const builtinServices: PortalService[] = [
     keywords: ['邮箱', '邮件', '通知'],
     source: 'manual',
   },
+  {
+    id: 'k',
+    name: '未来课堂',
+    description: '教学资源、课程学习',
+    url: 'https://k.ruc.edu.cn/',
+    category: 'study',
+    keywords: ['未来课堂', '教学资源', '课程学习'],
+    source: 'manual',
+  }
 ]

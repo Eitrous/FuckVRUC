@@ -6,5 +6,5 @@ export default defineContentScript({
 });
 
 const root = document.createElement("div")
-root.id = "ruc-plus-root"
+root.id = "fuckvruc-root"
 document.body.prepend(root)

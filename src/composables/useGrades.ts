@@ -1,5 +1,4 @@
 // src/composables/useGrades.ts
-
 import { ref } from 'vue'
 import type { GradeItem, GradeQueryResult } from '@/types/grade'
 
@@ -9,7 +8,7 @@ export function useGrades() {
   const grades = ref<GradeItem[]>([])
   const fetchedAt = ref<number>()
 
-  async function queryGrades(semester?: string) {
+  async function queryGrades() {
     loading.value = true
     error.value = undefined
 

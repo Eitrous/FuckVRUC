@@ -90,13 +90,19 @@ function normalizeGrades(raw: any): {
       return normalized
     }
 
+    const credit = parseNumber(item.xf)
+    const weightedGradePoint = parseNumber(item.jd)
+
     normalized.items.push({
       courseName: item.kcname ?? '',
       courseCode: item.kcbh,
       semester: normalizeSemester(item.xnxq),
-      credit: parseNumber(item.xf),
+      credit,
       score: String(item.zcj ?? ''),
-      gradePoint: parseNumber(item.jd) !== undefined && parseNumber(item.xf) !== undefined && parseNumber(item.xf) > 0 ? parseNumber(item.jd) / parseNumber(item.xf) : undefined,
+      gradePoint:
+        weightedGradePoint !== undefined && credit !== undefined && credit > 0
+          ? weightedGradePoint / credit
+          : undefined,
       courseType: item.kclbname ?? '-',
       raw: item,
     })

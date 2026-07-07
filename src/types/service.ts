@@ -18,3 +18,9 @@ export interface PortalService {
   sensitive?: boolean
   source: 'manual' | 'portal' | 'user'
 }
+
+export interface CustomPortalServiceInput {
+  name: string
+  url: string
+  description?: string
+}

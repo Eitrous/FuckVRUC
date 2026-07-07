@@ -14,7 +14,7 @@ import type {
 } from "./types";
 
 import { builtinServices, resolveMailUrl } from "@/services/services-index";
-import type { PortalService } from "@/types/service";
+import type { CustomPortalServiceInput, PortalService } from "@/types/service";
 import { useGrades } from "@/composables/useGrades";
 import { useSchedules } from "@/composables/useSchedules";
 import { useUserInfo } from "@/composables/useUserInfo";
@@ -49,6 +49,7 @@ const DEFAULT_SCHEDULE_SEMESTER = "2025-2026-2";
 const DEFAULT_SCHEDULE_WEEK = 1;
 const SELECTED_SCHEDULE_SEMESTER_STORAGE_KEY = "rucScheduleSelectedSemester";
 const SELECTED_SCHEDULE_WEEK_STORAGE_KEY = "rucScheduleSelectedWeek";
+const CUSTOM_SERVICES_STORAGE_KEY = "rucCustomServices";
 
 const semesterTerms = [
   { value: 1, label: "秋季学期" },
@@ -94,6 +95,7 @@ const semesterOptions = buildSemesterOptions();
 const weekOptions = buildWeekOptions();
 const selectedSemester = ref(DEFAULT_SCHEDULE_SEMESTER);
 const selectedWeek = ref(DEFAULT_SCHEDULE_WEEK);
+const customServices = ref<PortalService[]>([]);
 const query = ref("");
 const activeView = ref<DashboardViewId>("services");
 
@@ -155,16 +157,22 @@ const serviceIcons: Record<string, DashboardIcon> = {
   k: icons.classroom,
 };
 
+const allServices = computed(() => [
+  ...builtinServices,
+  ...customServices.value,
+]);
+
 const filteredServices = computed(() => {
   const q = query.value.trim().toLowerCase();
 
-  if (!q) return builtinServices;
+  if (!q) return allServices.value;
 
-  return builtinServices.filter((service) => {
+  return allServices.value.filter((service) => {
     return (
       service.name.toLowerCase().includes(q) ||
       service.description?.toLowerCase().includes(q) ||
-      service.keywords.some((keyword) => keyword.toLowerCase().includes(q))
+      service.keywords.some((keyword) => keyword.toLowerCase().includes(q)) ||
+      service.url.toLowerCase().includes(q)
     );
   });
 });
@@ -264,6 +272,149 @@ function queryCurrentSemesterSchedule() {
   void querySchedules(selectedSemester.value);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeCustomServiceUrl(value: string) {
+  const trimmedUrl = value.trim();
+
+  if (!trimmedUrl) return null;
+
+  const urlWithProtocol = /^[a-z][a-z\d+\-.]*:\/\//i.test(trimmedUrl)
+    ? trimmedUrl
+    : `https://${trimmedUrl}`;
+
+  try {
+    const url = new URL(urlWithProtocol);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function buildCustomServiceKeywords(input: CustomPortalServiceInput) {
+  return [input.name, input.description ?? "", input.url]
+    .map((keyword) => keyword.trim())
+    .filter(Boolean);
+}
+
+function buildCustomService(
+  id: string,
+  input: CustomPortalServiceInput,
+): PortalService {
+  const name = input.name.trim();
+  const description = input.description?.trim();
+  const service: PortalService = {
+    id,
+    name,
+    url: input.url,
+    category: "other",
+    keywords: buildCustomServiceKeywords({
+      name,
+      description,
+      url: input.url,
+    }),
+    source: "user",
+  };
+
+  if (description) {
+    service.description = description;
+  }
+
+  return service;
+}
+
+function normalizeStoredCustomService(value: unknown) {
+  if (!isRecord(value)) return null;
+
+  const id = typeof value.id === "string" ? value.id : "";
+  const name = typeof value.name === "string" ? value.name.trim() : "";
+  const description =
+    typeof value.description === "string" ? value.description.trim() : "";
+  const url =
+    typeof value.url === "string" ? normalizeCustomServiceUrl(value.url) : null;
+
+  if (!id.startsWith("custom-") || !name || !url) {
+    return null;
+  }
+
+  return buildCustomService(id, {
+    name,
+    description,
+    url,
+  });
+}
+
+function createCustomServiceId() {
+  return `custom-${crypto.randomUUID()}`;
+}
+
+async function saveCustomServices(services: PortalService[]) {
+  try {
+    await browser.storage.local.set({
+      [CUSTOM_SERVICES_STORAGE_KEY]: services,
+    });
+  } catch (err) {
+    console.error("Failed to save custom services:", err);
+  }
+}
+
+async function createCustomService(input: CustomPortalServiceInput) {
+  const normalizedUrl = normalizeCustomServiceUrl(input.url);
+
+  if (!input.name.trim() || !normalizedUrl) return;
+
+  const service = buildCustomService(createCustomServiceId(), {
+    ...input,
+    url: normalizedUrl,
+  });
+  const nextServices = [...customServices.value, service];
+
+  customServices.value = nextServices;
+  await saveCustomServices(nextServices);
+}
+
+async function updateCustomService(
+  id: string,
+  input: CustomPortalServiceInput,
+) {
+  const normalizedUrl = normalizeCustomServiceUrl(input.url);
+
+  if (!input.name.trim() || !normalizedUrl) return;
+
+  const serviceIndex = customServices.value.findIndex((service) => {
+    return service.id === id && service.source === "user";
+  });
+
+  if (serviceIndex === -1) return;
+
+  const nextServices = [...customServices.value];
+
+  nextServices[serviceIndex] = buildCustomService(id, {
+    ...input,
+    url: normalizedUrl,
+  });
+  customServices.value = nextServices;
+  await saveCustomServices(nextServices);
+}
+
+async function deleteCustomService(id: string) {
+  const nextServices = customServices.value.filter((service) => {
+    return service.id !== id;
+  });
+
+  if (nextServices.length === customServices.value.length) return;
+
+  customServices.value = nextServices;
+  await saveCustomServices(nextServices);
+}
+
 async function openService(service: PortalService) {
   let url = service.url;
 
@@ -339,12 +490,39 @@ async function restoreSelectedScheduleWeek() {
   }
 }
 
+async function restoreCustomServices() {
+  try {
+    const storedServices = (
+      await browser.storage.local.get(CUSTOM_SERVICES_STORAGE_KEY)
+    )[CUSTOM_SERVICES_STORAGE_KEY];
+
+    if (!Array.isArray(storedServices)) return;
+
+    const seenIds = new Set<string>();
+    const restoredServices = storedServices.flatMap((service) => {
+      const normalizedService = normalizeStoredCustomService(service);
+
+      if (!normalizedService || seenIds.has(normalizedService.id)) {
+        return [];
+      }
+
+      seenIds.add(normalizedService.id);
+      return [normalizedService];
+    });
+
+    customServices.value = restoredServices;
+  } catch (err) {
+    console.error("Failed to restore custom services:", err);
+  }
+}
+
 function retryUserInfo() {
   void syncUserInfo(true);
 }
 
 onMounted(() => {
   void syncUserInfo(true);
+  void restoreCustomServices();
   void restoreSelectedScheduleSemester();
   void restoreSelectedScheduleWeek();
   window.addEventListener("focus", syncWhenVisible);
@@ -373,7 +551,10 @@ onUnmounted(() => {
       <component
         :is="activeViewComponent"
         v-bind="activeViewProps"
+        @create-custom-service="createCustomService"
+        @delete-custom-service="deleteCustomService"
         @open-service="openService"
+        @update-custom-service="updateCustomService"
         @update:query="updateQuery"
         @update:semester="selectScheduleSemester"
         @update:week="selectScheduleWeek"

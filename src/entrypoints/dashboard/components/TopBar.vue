@@ -44,7 +44,8 @@ const icons = {
     '<path d="M24 96 128 48l104 48-104 48L24 96zM64 116v48c27 24 101 24 128 0v-48M224 104v58" fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="16"/>',
   ),
   retry: icon(
-    '<path d="M128 24a104 104 0 1 0 104 104A104.12 104.12 0 0 0 128 24Zm0 16v32M128 216v16M40.51 71.49l22.63 22.63M193.86 193.86l22.63 22.63M24 128h32M200 128h32M40.51 184.51l22.63-22.63M193.86 62.14l22.63-22.63" fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="16"/>',
+    `<path d="M0 0h256v256H0z" fill="none" />
+  <path fill="currentColor" d="M238 56v48a6 6 0 0 1-6 6h-48a6 6 0 0 1 0-12h32.55l-30.38-27.8c-.06-.06-.12-.13-.19-.19a82 82 0 1 0-1.7 117.65a6 6 0 0 1 8.24 8.73A93.46 93.46 0 0 1 128 222h-1.28a94 94 0 1 1 67.65-160.6L226 90.35V56a6 6 0 1 1 12 0" />`,
   ),
 };
 
@@ -96,12 +97,16 @@ function selectView(viewId: DashboardViewId) {
           <div v-if="props.userLoading">加载中...</div>
           <div v-else-if="props.userError" class="error-message">
             {{ props.userError }}
+            <button
+              class="retry-button"
+              type="button"
+              @click="emit('retry-user-info')">
             <Icon
-              class="user-icon"
+              class="retry-icon"
               :icon="icons.retry"
               aria-hidden="true"
-              @click="emit('retry-user-info')"
             />
+            </button>
           </div>
           <div v-else-if="props.userInfo" class="user-info">
             <Icon
@@ -173,9 +178,24 @@ function selectView(viewId: DashboardViewId) {
   min-width: 90px;
 }
 
+.retry-button {
+    flex: 0 0 auto;
+    background: var(--red);
+    border: 0;
+    color: #ffffff;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.retry-icon {
+    color: #fff;
+}
+
 .top-toolbar {
   width: 100%;
   display: flex;
+  flex: 1;
   gap: 16px;
   align-items: center;
   justify-content:flex-end;

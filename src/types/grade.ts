@@ -11,6 +11,14 @@ export interface GradeItem {
   raw?: unknown
 }
 
+export interface GradeSemesterSummary {
+  semester: string
+  totalCredit?: number
+  totalWeightedGradePoint?: number
+  averageGradePoint?: number
+  raw?: unknown
+}
+
 export interface GradeQueryParams {
   semester?: string
 }
@@ -18,6 +26,7 @@ export interface GradeQueryParams {
 export interface GradeQueryResult {
   ok: boolean
   items: GradeItem[]
+  summaries?: GradeSemesterSummary[]
   raw?: unknown
   error?: string
   fetchedAt: number

@@ -85,10 +85,33 @@ function normalizeSchedule(raw: any): ScheduleItem[] {
     teacher: item.teachernames,
     time: item.pksjmx.split(",").map((t: string) => parseInt(t.slice(1, 3), 10)),
     weekday: item.pksjmx.split(",").map((t: string) => parseInt(t[0], 10)),
-    weeks: item.pkzcmx.split(",").length > 0,
+    weeks: parseWeeks(item.pkzcmx),
     time_note: item.sjbz_name === "单双周" ? 0 : item.sjbz_name === "单周" ? 1 : item.sjbz_name === "双周" ? 2 : undefined,
     location: item.js_name,
     note: item.pkzt_name,
     raw: item,
   }));
+}
+
+function parseWeeks(value: unknown): number[] | undefined {
+  if (typeof value !== "string") return undefined;
+
+  const weeks = value
+    .split(",")
+    .flatMap((segment) => {
+      const numbers = segment.match(/\d+/g)?.map(Number) ?? [];
+
+      if (numbers.length >= 2 && segment.includes("-")) {
+        const [start, end] = numbers;
+        const lower = Math.min(start, end);
+        const upper = Math.max(start, end);
+
+        return Array.from({ length: upper - lower + 1 }, (_, index) => lower + index);
+      }
+
+      return numbers.slice(0, 1);
+    })
+    .filter((week) => Number.isInteger(week) && week > 0);
+
+  return weeks.length ? weeks : undefined;
 }

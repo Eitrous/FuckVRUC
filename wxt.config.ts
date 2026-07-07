@@ -31,11 +31,5 @@ export default defineConfig({
         48: "icon/48.png",
         128: "icon/128.png"
     },
-    content_scripts: [
-        {
-            matches: ["https://v.ruc.edu.cn/*"],
-            js: ["content-scripts/content.js"]
-        }
-    ]
   },
 });

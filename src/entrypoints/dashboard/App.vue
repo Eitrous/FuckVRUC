@@ -1,28 +1,112 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { Icon } from "@iconify/vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+
+import GradesView from "./components/GradesView.vue";
+import ScheduleView from "./components/ScheduleView.vue";
+import ServicesView from "./components/ServicesView.vue";
+import TopBar from "./components/TopBar.vue";
+import type {
+  DashboardIcon,
+  DashboardViewId,
+  SemesterOption,
+  ToolbarItem,
+  WeekOption,
+} from "./types";
+
 import { builtinServices, resolveMailUrl } from "@/services/services-index";
 import type { PortalService } from "@/types/service";
 import { useGrades } from "@/composables/useGrades";
 import { useSchedules } from "@/composables/useSchedules";
+import { useUserInfo } from "@/composables/useUserInfo";
 
-const { loading, error, grades, fetchedAt, queryGrades } = useGrades();
+const {
+  checkLoginStatus,
+  getUserInfo,
+  userInfo,
+  user_error,
+  user_queryLoading,
+} = useUserInfo();
+
+const {
+  loading,
+  error,
+  grades,
+  gradeSummaries,
+  fetchedAt,
+  queryGrades,
+} = useGrades();
 
 const {
   schedule_queryLoading,
   schedule_error,
   schedules,
   schedule_fetchedAt,
+  loadCachedSchedule,
   querySchedules,
 } = useSchedules();
 
-const currentSemester = "2025-2026-2";
-const query = ref("");
+const DEFAULT_SCHEDULE_SEMESTER = "2025-2026-2";
+const DEFAULT_SCHEDULE_WEEK = 1;
+const SELECTED_SCHEDULE_SEMESTER_STORAGE_KEY = "rucScheduleSelectedSemester";
+const SELECTED_SCHEDULE_WEEK_STORAGE_KEY = "rucScheduleSelectedWeek";
 
-type DashboardIcon = {
-  width: number;
-  height: number;
-  body: string;
+const semesterTerms = [
+  { value: 1, label: "秋季学期" },
+  { value: 2, label: "春季学期" },
+  { value: 3, label: "寒假" },
+  { value: 4, label: "国际小学期" },
+  { value: 5, label: "暑假" },
+] as const;
+
+function currentAcademicYearStart(date = new Date()) {
+  const month = date.getMonth();
+  const year = date.getFullYear();
+
+  return month >= 8 ? year : year - 1;
+}
+
+function buildSemesterOptions(): SemesterOption[] {
+  const academicYearStart = currentAcademicYearStart();
+
+  return Array.from({ length: 4 }, (_, index) => academicYearStart - index)
+    .flatMap((yearStart) => {
+      const academicYear = `${yearStart}-${yearStart + 1}`;
+
+      return semesterTerms.map((term) => ({
+        value: `${academicYear}-${term.value}`,
+        label: `${academicYear} ${term.label}`,
+      }));
+    });
+}
+
+function buildWeekOptions(): WeekOption[] {
+  return Array.from({ length: 20 }, (_, index) => {
+    const week = index + 1;
+
+    return {
+      value: week,
+      label: `第 ${week} 周`,
+    };
+  });
+}
+
+const semesterOptions = buildSemesterOptions();
+const weekOptions = buildWeekOptions();
+const selectedSemester = ref(DEFAULT_SCHEDULE_SEMESTER);
+const selectedWeek = ref(DEFAULT_SCHEDULE_WEEK);
+const query = ref("");
+const activeView = ref<DashboardViewId>("services");
+
+const toolbarItems: ToolbarItem[] = [
+  { id: "services", label: "服务入口" },
+  { id: "schedule", label: "课表" },
+  { id: "grades", label: "成绩" },
+];
+
+const viewComponentMap = {
+  services: ServicesView,
+  schedule: ScheduleView,
+  grades: GradesView,
 };
 
 function icon(body: string): DashboardIcon {
@@ -58,6 +142,10 @@ const icons = {
   exam: icon(
     '<path d="M72 32h88l40 40v152H72V32zM160 32v40h40M96 112h64M96 148h64M96 184h40" fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="16"/>',
   ),
+  globe: icon(
+    `<path d="M0 0h256v256H0z" fill="none" />
+    <path fill="currentColor" d="M128 26a102 102 0 1 0 102 102A102.12 102.12 0 0 0 128 26m81.57 64h-40.38a132.6 132.6 0 0 0-25.73-50.67A90.29 90.29 0 0 1 209.57 90m8.43 38a89.7 89.7 0 0 1-3.83 26h-42.36a155.4 155.4 0 0 0 0-52h42.36a89.7 89.7 0 0 1 3.83 26m-90 87.83a110 110 0 0 1-15.19-19.45A124.2 124.2 0 0 1 99.35 166h57.3a124.2 124.2 0 0 1-13.46 30.38A110 110 0 0 1 128 215.83M96.45 154a139.2 139.2 0 0 1 0-52h63.1a139.2 139.2 0 0 1 0 52ZM38 128a89.7 89.7 0 0 1 3.83-26h42.36a155.4 155.4 0 0 0 0 52H41.83A89.7 89.7 0 0 1 38 128m90-87.83a110 110 0 0 1 15.19 19.45A124.2 124.2 0 0 1 156.65 90h-57.3a124.2 124.2 0 0 1 13.46-30.38A110 110 0 0 1 128 40.17m-15.46-.84A132.6 132.6 0 0 0 86.81 90H46.43a90.29 90.29 0 0 1 66.11-50.67M46.43 166h40.38a132.6 132.6 0 0 0 25.73 50.67A90.29 90.29 0 0 1 46.43 166m97 50.67A132.6 132.6 0 0 0 169.19 166h40.38a90.29 90.29 0 0 1-66.11 50.67Z" />`
+  ),
 };
 
 const serviceIcons: Record<string, DashboardIcon> = {
@@ -85,48 +173,95 @@ function serviceIcon(service: PortalService) {
   return serviceIcons[service.id] ?? icons.squares;
 }
 
-function formatDateTime(value?: number) {
-  if (!value) return "";
+const activeViewComponent = computed(() => viewComponentMap[activeView.value]);
 
-  return new Date(value).toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatCell(value: unknown) {
-  if (Array.isArray(value)) {
-    const text = value.filter(Boolean).join(", ");
-    return text || "-";
+const activeViewProps = computed(() => {
+  if (activeView.value === "services") {
+    return {
+      icon: icons.squares,
+      query: query.value,
+      services: filteredServices.value,
+      searchIcon: icons.search,
+      serviceIcon,
+    };
   }
 
-  if (value === null || value === undefined || value === "") {
-    return "-";
+  if (activeView.value === "schedule") {
+    return {
+      icon: icons.calendar,
+      selectedSemester: selectedSemester.value,
+      semesterOptions,
+      selectedWeek: selectedWeek.value,
+      weekOptions,
+      loading: schedule_queryLoading.value,
+      error: schedule_error.value,
+      fetchedAt: schedule_fetchedAt.value,
+      schedules: schedules.value,
+    };
   }
 
-  return String(value);
+  return {
+    icon: icons.exam,
+    loading: loading.value,
+    error: error.value,
+    fetchedAt: fetchedAt.value,
+    grades: grades.value,
+    summaries: gradeSummaries.value,
+  };
+});
+
+function selectView(viewId: DashboardViewId) {
+  activeView.value = viewId;
+
+  if (viewId === "schedule" && schedules.value.length === 0) {
+    void loadCachedSchedule(selectedSemester.value);
+  }
 }
 
-function formatScheduleTime(weekday: unknown, time: unknown) {
-  const weekdayNames = ["一", "二", "三", "四", "五", "六", "日"];
-  const weekdays = Array.isArray(weekday) ? weekday : weekday ? [weekday] : [];
-  const times = Array.isArray(time) ? time : time ? [time] : [];
-  const weekdayText = weekdays
-    .map((item) => {
-      const index = Number(item) - 1;
-      return weekdayNames[index] ? `周${weekdayNames[index]}` : String(item);
-    })
-    .join(", ");
-  const timeText = times.filter(Boolean).join(", ");
+function updateQuery(value: string) {
+  query.value = value;
+}
 
-  if (!weekdayText && !timeText) return "-";
+function isKnownSemester(value: string) {
+  return semesterOptions.some((option) => option.value === value);
+}
 
-  return [weekdayText, timeText ? `${timeText} 节` : ""]
-    .filter(Boolean)
-    .join(" / ");
+function isKnownWeek(value: number) {
+  return weekOptions.some((option) => option.value === value);
+}
+
+async function selectScheduleSemester(semester: string) {
+  if (!isKnownSemester(semester)) return;
+
+  selectedSemester.value = semester;
+
+  try {
+    await browser.storage.local.set({
+      [SELECTED_SCHEDULE_SEMESTER_STORAGE_KEY]: semester,
+    });
+  } catch (err) {
+    console.error("Failed to save selected schedule semester:", err);
+  }
+
+  await loadCachedSchedule(semester);
+}
+
+async function selectScheduleWeek(week: number) {
+  if (!isKnownWeek(week)) return;
+
+  selectedWeek.value = week;
+
+  try {
+    await browser.storage.local.set({
+      [SELECTED_SCHEDULE_WEEK_STORAGE_KEY]: week,
+    });
+  } catch (err) {
+    console.error("Failed to save selected schedule week:", err);
+  }
+}
+
+function queryCurrentSemesterSchedule() {
+  void querySchedules(selectedSemester.value);
 }
 
 async function openService(service: PortalService) {
@@ -138,226 +273,119 @@ async function openService(service: PortalService) {
 
   browser.tabs.create({ url });
 }
+
+function openLogin() {
+  browser.tabs.create({ url: "https://v.ruc.edu.cn/" });
+}
+
+let userSyncPromise: Promise<void> | null = null;
+
+async function syncUserInfo(force = false) {
+  if (userSyncPromise) return userSyncPromise;
+
+  userSyncPromise = (async () => {
+    const loggedIn = await checkLoginStatus();
+
+    if (!loggedIn) {
+      userInfo.value = null;
+      return;
+    }
+
+    if (force || !userInfo.value) {
+      await getUserInfo();
+    }
+  })().finally(() => {
+    userSyncPromise = null;
+  });
+
+  return userSyncPromise;
+}
+
+function syncWhenVisible() {
+  if (!document.hidden) {
+    void syncUserInfo();
+  }
+}
+
+async function restoreSelectedScheduleSemester() {
+  try {
+    const storedSemester = (
+      await browser.storage.local.get(SELECTED_SCHEDULE_SEMESTER_STORAGE_KEY)
+    )[SELECTED_SCHEDULE_SEMESTER_STORAGE_KEY];
+
+    if (typeof storedSemester === "string" && isKnownSemester(storedSemester)) {
+      selectedSemester.value = storedSemester;
+    }
+  } catch (err) {
+    console.error("Failed to restore selected schedule semester:", err);
+  }
+
+  await loadCachedSchedule(selectedSemester.value);
+}
+
+async function restoreSelectedScheduleWeek() {
+  try {
+    const storedWeek = (
+      await browser.storage.local.get(SELECTED_SCHEDULE_WEEK_STORAGE_KEY)
+    )[SELECTED_SCHEDULE_WEEK_STORAGE_KEY];
+    const week =
+      typeof storedWeek === "number" ? storedWeek : Number(storedWeek);
+
+    if (isKnownWeek(week)) {
+      selectedWeek.value = week;
+    }
+  } catch (err) {
+    console.error("Failed to restore selected schedule week:", err);
+  }
+}
+
+function retryUserInfo() {
+  void syncUserInfo(true);
+}
+
+onMounted(() => {
+  void syncUserInfo(true);
+  void restoreSelectedScheduleSemester();
+  void restoreSelectedScheduleWeek();
+  window.addEventListener("focus", syncWhenVisible);
+  document.addEventListener("visibilitychange", syncWhenVisible);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("focus", syncWhenVisible);
+  document.removeEventListener("visibilitychange", syncWhenVisible);
+});
 </script>
 
 <template>
+  <TopBar
+    :active-view="activeView"
+    :toolbar-items="toolbarItems"
+    :user-info="userInfo"
+    :user-error="user_error"
+    :user-loading="user_queryLoading"
+    @login="openLogin"
+    @select-view="selectView"
+    @retry-user-info="retryUserInfo"
+  />
   <main class="dashboard-page">
     <div class="dashboard-shell">
-      <header class="hero">
-        <p class="eyebrow">RUC Portal</p>
-        <h1>微人大 ++</h1>
-        <p class="hero-copy">常用服务入口、课表和成绩查询。</p>
-      </header>
-
-      <section class="services-section" aria-labelledby="services-title">
-        <div class="section-heading">
-          <h2 id="services-title">服务入口</h2>
-        </div>
-
-        <label class="search-field">
-          <Icon class="search-icon" :icon="icons.search" aria-hidden="true" />
-          <input
-            v-model="query"
-            type="search"
-            aria-label="搜索服务入口"
-            placeholder="搜索：课表、成绩、图书馆、校园卡、网络服务"
-          />
-        </label>
-
-        <div v-if="filteredServices.length" class="service-grid">
-          <button
-            v-for="service in filteredServices"
-            :key="service.id"
-            class="service-card"
-            type="button"
-            @click="openService(service)"
-          >
-            <span class="service-icon" aria-hidden="true">
-              <Icon :icon="serviceIcon(service)" />
-            </span>
-            <span class="service-body">
-              <span class="service-name">{{ service.name }}</span>
-              <span class="service-description">{{ service.description }}</span>
-            </span>
-            <span class="service-action">打开</span>
-          </button>
-        </div>
-
-        <p v-else class="empty-state">没有匹配的服务入口。</p>
-      </section>
-
-      <section class="data-grid" aria-label="学业信息">
-        <article class="data-panel">
-          <header class="panel-header">
-            <div class="panel-title">
-              <Icon :icon="icons.calendar" aria-hidden="true" />
-              <div>
-                <h2>课表</h2>
-                <p>当前学期 {{ currentSemester }}</p>
-              </div>
-            </div>
-
-            <button
-              class="primary-button"
-              type="button"
-              :disabled="schedule_queryLoading"
-              @click="querySchedules(currentSemester)"
-            >
-              {{ schedule_queryLoading ? "查询中" : "查询课表" }}
-            </button>
-          </header>
-
-          <p v-if="schedule_error" class="error-message">
-            {{ schedule_error }}
-          </p>
-
-          <p v-if="schedule_fetchedAt" class="timestamp">
-            更新时间：{{ formatDateTime(schedule_fetchedAt) }}
-          </p>
-
-          <div
-            v-if="schedule_queryLoading"
-            class="skeleton-stack"
-            aria-label="课表加载中"
-          >
-            <span class="skeleton-line is-wide"></span>
-            <span class="skeleton-line"></span>
-            <span class="skeleton-line is-short"></span>
-          </div>
-
-          <div v-else-if="schedules.length" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>课程</th>
-                  <th>学分</th>
-                  <th>上课时间</th>
-                  <th>上课地点</th>
-                  <th>教师</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in schedules"
-                  :key="`${item.courseCode}-${item.courseName}`"
-                >
-                  <td>{{ item.courseName }}</td>
-                  <td>{{ formatCell(item.credit) }}</td>
-                  <td>{{ formatScheduleTime(item.weekday, item.time) }}</td>
-                  <td>{{ formatCell(item.location) }}</td>
-                  <td>{{ formatCell(item.teacher) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <p v-else class="empty-state">尚未查询课表。</p>
-        </article>
-
-        <article class="data-panel">
-          <header class="panel-header">
-            <div class="panel-title">
-              <Icon :icon="icons.exam" aria-hidden="true" />
-              <div>
-                <h2>成绩</h2>
-                <p>仅在本地浏览器中查询和展示。</p>
-              </div>
-            </div>
-
-            <button
-              class="primary-button"
-              type="button"
-              :disabled="loading"
-              @click="queryGrades()"
-            >
-              {{ loading ? "查询中" : "查询成绩" }}
-            </button>
-          </header>
-
-          <p v-if="error" class="error-message">
-            {{ error }}
-          </p>
-
-          <p v-if="fetchedAt" class="timestamp">
-            更新时间：{{ formatDateTime(fetchedAt) }}
-          </p>
-
-          <div v-if="loading" class="skeleton-stack" aria-label="成绩加载中">
-            <span class="skeleton-line is-wide"></span>
-            <span class="skeleton-line"></span>
-            <span class="skeleton-line is-short"></span>
-          </div>
-
-          <div v-else-if="grades.length" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>课程</th>
-                  <th>学分</th>
-                  <th>成绩</th>
-                  <th>绩点</th>
-                  <th>学期</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in grades"
-                  :key="`${item.semester}-${item.courseCode}-${item.courseName}`"
-                >
-                  <td>{{ item.courseName }}</td>
-                  <td>{{ formatCell(item.credit) }}</td>
-                  <td>{{ formatCell(item.score) }}</td>
-                  <td>{{ formatCell(item.gradePoint) }}</td>
-                  <td>{{ formatCell(item.semester) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <p v-else class="empty-state">尚未查询成绩。</p>
-        </article>
-      </section>
+      <component
+        :is="activeViewComponent"
+        v-bind="activeViewProps"
+        @open-service="openService"
+        @update:query="updateQuery"
+        @update:semester="selectScheduleSemester"
+        @update:week="selectScheduleWeek"
+        @query-schedules="queryCurrentSemesterSchedule"
+        @query-grades="queryGrades"
+      />
     </div>
   </main>
 </template>
 
 <style scoped>
-:global(*) {
-  box-sizing: border-box;
-  border-radius: 0;
-}
-
-:global(html) {
-  min-height: 100%;
-  background: #fefefe;
-  --red: #b91c1c;
-  --bg: #fefefe;
-  --text: #1f1a1a;
-  --accent: #b91c1c;
-  --muted: #806969;
-  --border: #b91c1c;
-}
-
-:global(body) {
-  min-width: 320px;
-  min-height: 100%;
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family:
-    "SF Pro Display",
-    "Geist Sans",
-    "Helvetica Neue",
-    Arial,
-    "PingFang SC",
-    "Microsoft YaHei",
-    sans-serif;
-}
-
-:global(button),
-:global(input) {
-  font: inherit;
-}
+@import "style.css";
 
 .dashboard-page {
   min-height: 100dvh;
@@ -367,386 +395,12 @@ async function openService(service: PortalService) {
 .dashboard-shell {
   width: min(100%, 1180px);
   margin: 0 auto;
-  padding: 56px 24px 72px;
-}
-
-.hero {
-  max-width: 680px;
-  padding-bottom: 36px;
-}
-
-.eyebrow {
-  margin: 0 0 14px;
-  color: var(--red);
-  font-family: "SF Mono", "Geist Mono", "JetBrains Mono", monospace;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.hero h1 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(44px, 8vw, 84px);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.95;
-}
-
-.hero-copy {
-  max-width: 460px;
-  margin: 22px 0 0;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1.7;
-}
-
-.services-section,
-.data-panel {
-  background: var(--bg);
-  border: 1px solid var(--border);
-}
-
-.services-section {
-  padding: 28px;
-}
-
-.section-heading,
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.section-heading h2,
-.panel-title h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-
-.search-field {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  gap: 12px;
-  align-items: center;
-  margin-top: 22px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--red);
-  padding: 14px 16px;
-  transition:
-    border-color 180ms ease,
-    background-color 180ms ease;
-}
-
-.search-field:focus-within {
-  border-color: var(--red);
-  outline: 2px solid var(--red);
-  outline-offset: 2px;
-}
-
-.search-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.search-field input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 15px;
-}
-
-.search-field input::placeholder {
-  color: var(--muted);
-}
-
-.service-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-top: 1px solid var(--border);
-  border-left: 1px solid var(--border);
-  margin-top: 24px;
-}
-
-.service-card {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: start;
-  min-height: 148px;
-  border: 0;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  padding: 20px;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.service-card:hover {
-  background: var(--bg);
-}
-
-.service-card:active {
-  transform: translateY(1px);
-}
-
-.service-card:focus-visible,
-.primary-button:focus-visible {
-  outline: 2px solid var(--red);
-  outline-offset: 2px;
-}
-
-.service-icon {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  color: var(--red);
-}
-
-.service-icon svg {
-  width: 19px;
-  height: 19px;
-}
-
-.service-body {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-
-.service-name {
-  color: var(--text);
-  font-size: 16px;
-  font-weight: 650;
-  line-height: 1.25;
-}
-
-.service-description {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.service-action {
-  color: var(--red);
-  font-family: "SF Mono", "Geist Mono", "JetBrains Mono", monospace;
-  font-size: 12px;
-  line-height: 1;
-}
-
-.data-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 18px;
-}
-
-.data-panel {
-  min-width: 0;
-  padding: 24px;
-}
-
-.panel-header {
-  align-items: flex-start;
-}
-
-.panel-title {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-
-.panel-title svg {
-  width: 24px;
-  height: 24px;
-  color: var(--red);
-}
-
-.panel-title p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.primary-button {
-  flex: 0 0 auto;
-  border: 1px solid var(--red);
-  background: var(--red);
-  color: #ffffff;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-  transition:
-    background-color 180ms ease,
-    border-color 180ms ease,
-    transform 180ms ease,
-    opacity 180ms ease;
-}
-
-.primary-button:hover:not(:disabled) {
-  border-color: var(--red);
-  background: var(--red);
-}
-
-.primary-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.primary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
-}
-
-.error-message,
-.timestamp,
-.empty-state {
-  margin: 18px 0 0;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.error-message {
-  border-left: 2px solid var(--red);
-  color: var(--red);
-  padding-left: 10px;
-}
-
-.timestamp,
-.empty-state {
-  color: var(--muted);
-}
-
-.timestamp {
-  font-family: "SF Mono", "Geist Mono", "JetBrains Mono", monospace;
-  font-size: 12px;
-}
-
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  margin-top: 20px;
-  border: 1px solid var(--border);
-}
-
-table {
-  width: 100%;
-  min-width: 620px;
-  border-collapse: collapse;
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-th,
-td {
-  border-bottom: 1px solid var(--border);
-  padding: 12px 14px;
-  text-align: left;
-  vertical-align: top;
-}
-
-th {
-  background: var(--bg);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.skeleton-stack {
-  display: grid;
-  gap: 10px;
-  margin-top: 22px;
-}
-
-.skeleton-line {
-  display: block;
-  width: 74%;
-  height: 14px;
-  background: var(--bg);
-  animation: pulse 1.1s ease-in-out infinite alternate;
-}
-
-.skeleton-line.is-wide {
-  width: 100%;
-}
-
-.skeleton-line.is-short {
-  width: 46%;
-}
-
-@keyframes pulse {
-  from {
-    opacity: 0.46;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@media (max-width: 920px) {
-  .service-grid,
-  .data-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  padding: 24px 24px 72px;
 }
 
 @media (max-width: 640px) {
   .dashboard-shell {
     padding: 34px 16px 48px;
-  }
-
-  .hero {
-    padding-bottom: 28px;
-  }
-
-  .services-section,
-  .data-panel {
-    padding: 18px;
-  }
-
-  .section-heading,
-  .panel-header {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .service-grid,
-  .data-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .service-card {
-    min-height: 128px;
-  }
-
-  .primary-button {
-    width: 100%;
   }
 }
 </style>

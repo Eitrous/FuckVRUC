@@ -1,0 +1,30 @@
+:global(*) {
+  box-sizing: border-box;
+  border-radius: 0;
+}
+
+:global(html) {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  min-height: 100%;
+  background: #fefefe;
+  --red: #901818;
+  --red-dark: #761313;
+  --bg: #fefefe;
+  --text: #1f1a1a;
+  --accent: #901818;
+  --muted: #806969;
+  --border: #901818;
+}
+
+:global(body) {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+:global(button),
+:global(input) {
+  font: inherit;
+}

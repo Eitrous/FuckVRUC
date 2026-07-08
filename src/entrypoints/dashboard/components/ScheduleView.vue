@@ -303,7 +303,7 @@ function updateWeek(event: Event) {
     <div
       v-else-if="props.schedules.length"
       class="schedule-grid-wrap"
-      aria-label="传统网格式课表"
+      aria-label="课表"
     >
       <div class="schedule-grid">
         <div class="schedule-corner" style="grid-column: 1; grid-row: 1">

@@ -40,9 +40,26 @@ const icons = {
     `<path d="M0 0h256v256H0z" fill="none" />
     <path fill="currentColor" d="M188.24 123.76a6 6 0 0 1 0 8.48l-72 72a6 6 0 0 1-8.48-8.48L169.51 134H32a6 6 0 0 1 0-12h137.51l-61.75-61.76a6 6 0 0 1 8.48-8.48ZM216 34a6 6 0 0 0-6 6v176a6 6 0 0 0 12 0V40a6 6 0 0 0-6-6" />`
   ),
+  plus: icon(
+    `<path d="M0 0h256v256H0z" fill="none" />
+  <path fill="currentColor" d="M220 128a4 4 0 0 1-4 4h-84v84a4 4 0 0 1-8 0v-84H40a4 4 0 0 1 0-8h84V40a4 4 0 0 1 8 0v84h84a4 4 0 0 1 4 4" />`
+  ),
+  close: icon(
+    `<path d="M0 0h256v256H0z" fill="none" />
+  <path fill="currentColor" d="M208.49 191.51a12 12 0 0 1-17 17L128 145l-63.51 63.49a12 12 0 0 1-17-17L111 128L47.51 64.49a12 12 0 0 1 17-17L128 111l63.51-63.52a12 12 0 0 1 17 17L145 128Z" />`
+  ),
+  edit: icon(
+    `<path d="M0 0h256v256H0z" fill="none" />
+  <path fill="currentColor" d="m229.66 58.34l-32-32a8 8 0 0 0-11.32 0l-96 96A8 8 0 0 0 88 128v32a8 8 0 0 0 8 8h32a8 8 0 0 0 5.66-2.34l96-96a8 8 0 0 0 0-11.32M124.69 152H104v-20.69l64-64L188.69 88ZM200 76.69L179.31 56L192 43.31L212.69 64ZM224 128v80a16 16 0 0 1-16 16H48a16 16 0 0 1-16-16V48a16 16 0 0 1 16-16h80a8 8 0 0 1 0 16H48v160h160v-80a8 8 0 0 1 16 0" />`
+  ),
+  delete: icon(
+    `<path d="M0 0h256v256H0z" fill="none" />
+  <path fill="currentColor" d="M216 48h-40v-8a24 24 0 0 0-24-24h-48a24 24 0 0 0-24 24v8H40a8 8 0 0 0 0 16h8v144a16 16 0 0 0 16 16h128a16 16 0 0 0 16-16V64h8a8 8 0 0 0 0-16M96 40a8 8 0 0 1 8-8h48a8 8 0 0 1 8 8v8H96Zm96 168H64V64h128Zm-80-104v64a8 8 0 0 1-16 0v-64a8 8 0 0 1 16 0m48 0v64a8 8 0 0 1-16 0v-64a8 8 0 0 1 16 0" />`
+  )
 };
 
 const isServiceModalOpen = ref(false);
+const isEidtingService = ref(false);
 const serviceFormMode = ref<ServiceFormMode>("create");
 const editingServiceId = ref<string | null>(null);
 const serviceFormError = ref("");
@@ -178,8 +195,8 @@ function deleteCustomService(service: PortalService) {
         <h2>服务入口</h2>
       </div>
 
-      <button class="primary-button" type="button" @click="openCreateModal">
-        添加服务
+      <button class="primary-button" type="button" @click="() => { isEidtingService = !isEidtingService }">
+        {{ isEidtingService ? "完成" : "编辑服务" }}
       </button>
     </header>
 
@@ -203,6 +220,7 @@ function deleteCustomService(service: PortalService) {
         <button
           class="service-open-button"
           type="button"
+          :disabled="isEidtingService"
           @click="openService(service)"
         >
           <span class="service-icon" aria-hidden="true">
@@ -220,27 +238,39 @@ function deleteCustomService(service: PortalService) {
               自定义服务
             </span>
           </span>
-          <span class="service-action">
+          <span v-if="!isEidtingService" class="service-action">
             <Icon :icon="icons.enter" aria-hidden="true" />
           </span>
         </button>
 
-        <div v-if="isCustomService(service)" class="service-management">
+        <div v-if="isCustomService(service) && isEidtingService" class="service-management">
           <button
             class="service-manage-button"
             type="button"
             @click="openEditModal(service)"
           >
-            编辑
+            <Icon :icon="icons.edit" aria-hidden="true" />
           </button>
           <button
             class="service-manage-button is-danger"
             type="button"
             @click="deleteCustomService(service)"
           >
-            删除
+            <Icon :icon="icons.delete" aria-hidden="true" />
           </button>
         </div>
+      </article>
+      <article
+        v-if="isEidtingService"
+        class="service-card service-adding-card"
+      >
+        <button
+          class="service-adding-button"
+          type="button"
+          @click="openCreateModal"
+        >
+          <Icon :icon="icons.plus" class="service-adding-icon"/>
+        </button>
       </article>
     </div>
 
@@ -265,7 +295,7 @@ function deleteCustomService(service: PortalService) {
             aria-label="关闭"
             @click="closeServiceModal"
           >
-            关闭
+            <Icon :icon="icons.close" aria-hidden="true" />
           </button>
         </header>
 
@@ -449,8 +479,7 @@ function deleteCustomService(service: PortalService) {
 .service-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-top: 1px solid var(--border);
-  border-left: 1px solid var(--border);
+  gap: 16px;
   margin-top: 24px;
 }
 
@@ -458,8 +487,7 @@ function deleteCustomService(service: PortalService) {
   display: flex;
   flex-direction: column;
   min-height: 148px;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
   transition:
@@ -469,6 +497,10 @@ function deleteCustomService(service: PortalService) {
 
 .service-card:hover {
   background: var(--bg);
+}
+
+.service-adding-card {
+  border: 1px dashed var(--border);
 }
 
 .service-open-button {
@@ -536,6 +568,27 @@ function deleteCustomService(service: PortalService) {
   height: 20px;
 }
 
+.service-adding-button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  flex: 1 1 auto;
+  border: 0;
+  background: transparent;
+  color: var(--red);
+  padding: 20px;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.service-adding-button svg {
+  width: 60px;
+  height: 60px;
+}
+
 .service-management {
   display: flex;
   justify-content: flex-end;
@@ -544,12 +597,10 @@ function deleteCustomService(service: PortalService) {
 }
 
 .service-manage-button {
-  border: 1px solid var(--border);
+  border: 0;
   background: var(--bg);
   color: var(--red);
   padding: 6px 9px;
-  font-size: 12px;
-  font-weight: 650;
   cursor: pointer;
   transition:
     background-color 180ms ease,
@@ -571,8 +622,9 @@ function deleteCustomService(service: PortalService) {
   outline-offset: 2px;
 }
 
-.service-manage-button.is-danger {
-  border-color: var(--red);
+.service-manage-button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .empty-state {
@@ -617,13 +669,20 @@ function deleteCustomService(service: PortalService) {
 }
 
 .modal-close-button {
-  border: 1px solid var(--border);
+  border: 0;
   background: var(--bg);
   color: var(--red);
   padding: 6px 9px;
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .modal-close-button:hover {
@@ -634,6 +693,11 @@ function deleteCustomService(service: PortalService) {
 .modal-close-button:focus-visible {
   outline: 2px solid var(--red);
   outline-offset: 2px;
+}
+
+.modal-close-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .service-form {

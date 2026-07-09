@@ -49,12 +49,30 @@ export const builtinServices: PortalService[] = [
     source: 'manual',
   },
   {
+    id: 'network',
+    name: '校园网',
+    description: '校园网认证、流量查询',
+    url: 'https://go.ruc.edu.cn/',
+    category: 'network',
+    keywords: ['校园网', '认证', '流量'],
+    source: 'manual',
+  },
+  {
     id: 'k',
     name: '未来课堂',
     description: '教学资源、课程学习',
     url: 'https://k.ruc.edu.cn/',
     category: 'study',
     keywords: ['未来课堂', '教学资源', '课程学习'],
+    source: 'manual',
+  },
+  {
+    id: 'iss',
+    name: '暑期国际学校',
+    description: '小学期',
+    url: 'https://jw.ruc.edu.cn/Minjw/#/dashboard',
+    category: 'study',
+    keywords: ['暑期国际学校', '小学期'],
     source: 'manual',
   }
 ]

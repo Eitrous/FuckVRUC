@@ -214,6 +214,7 @@ function selectView(viewId: DashboardViewId) {
   font-weight: 650;
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.08s ease; 
 }
 
 .toolbar-item:hover,

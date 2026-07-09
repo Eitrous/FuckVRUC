@@ -466,8 +466,7 @@ function updateWeek(event: Event) {
 }
 
 .schedule-select-field select:focus-visible {
-  outline: 2px solid var(--red);
-  outline-offset: 2px;
+  background: color-mix(in srgb, var(--red) 10%, var(--bg));
 }
 
 .primary-button {
@@ -500,8 +499,7 @@ function updateWeek(event: Event) {
 }
 
 .primary-button:focus-visible {
-  outline: 2px solid var(--red);
-  outline-offset: 2px;
+  background: color-mix(in srgb, var(--red) 10%, var(--bg));
 }
 
 .error-message,

@@ -4,7 +4,7 @@ import {
 } from '@/utils/settings';
 
 export default defineContentScript({
-  matches: ['https://v.ruc.edu.cn/*'],
+  matches: ['https://v.ruc.edu.cn/*', 'https://my.ruc.edu.cn/*', 'https://jw.ruc.edu.cn/*'],
   main() {
     const rootId = 'fuckvruc-root';
     const existingHost = document.getElementById(rootId);

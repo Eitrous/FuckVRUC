@@ -206,7 +206,7 @@ function deleteCustomService(service: PortalService) {
         :value="props.query"
         type="search"
         aria-label="搜索服务入口"
-        placeholder="搜索：课表、成绩、图书馆、校园卡、网络服务"
+        placeholder="搜索："
         @input="updateQuery"
       />
     </label>
@@ -433,7 +433,6 @@ function deleteCustomService(service: PortalService) {
 .primary-button:focus-visible,
 .secondary-button:focus-visible {
   outline: 2px solid var(--red);
-  outline-offset: 2px;
 }
 
 .search-field {
@@ -452,9 +451,7 @@ function deleteCustomService(service: PortalService) {
 }
 
 .search-field:focus-within {
-  border-color: var(--red);
-  outline: 2px solid var(--red);
-  outline-offset: 2px;
+  background: color-mix(in srgb, var(--red) 10%, var(--bg));
 }
 
 .search-icon {
@@ -496,7 +493,7 @@ function deleteCustomService(service: PortalService) {
 }
 
 .service-card:hover {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--red) 10%, var(--bg));
 }
 
 .service-adding-card {
@@ -525,7 +522,6 @@ function deleteCustomService(service: PortalService) {
 
 .service-open-button:focus-visible {
   outline: 2px solid var(--red);
-  outline-offset: 2px;
 }
 
 .service-icon {
@@ -619,7 +615,6 @@ function deleteCustomService(service: PortalService) {
 
 .service-manage-button:focus-visible {
   outline: 2px solid var(--red);
-  outline-offset: 2px;
 }
 
 .service-manage-button svg {
@@ -692,7 +687,6 @@ function deleteCustomService(service: PortalService) {
 
 .modal-close-button:focus-visible {
   outline: 2px solid var(--red);
-  outline-offset: 2px;
 }
 
 .modal-close-button svg {
@@ -734,7 +728,6 @@ function deleteCustomService(service: PortalService) {
 .form-field input:focus-visible,
 .form-field textarea:focus-visible {
   outline: 2px solid var(--red);
-  outline-offset: 2px;
 }
 
 .form-field input::placeholder,

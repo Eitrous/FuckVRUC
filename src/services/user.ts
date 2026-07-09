@@ -1,11 +1,11 @@
-import { getTokenCookie } from "@/utils/getTokenCookie";
+import { getTokenCookie, getExistingTokenCookie } from "@/utils/getTokenCookie";
 import type { LoginStatusQueryResult, UserInfo, UserInfoQueryResult } from "@/types/user";
 
 const USER_INFO_API_URL = "https://jw.ruc.edu.cn/resService/jwxtpt/v1/jczy/userIndex/findUserDetail?resourceCode=GRZX01&apiCode=jwPublic.controller.UserIndexController.findUserDetail";
 
 export async function getLoginStatus(): Promise<LoginStatusQueryResult> {
   try {
-    const token = await getTokenCookie();
+    const token = await getExistingTokenCookie();
 
     return {
       ok: true,

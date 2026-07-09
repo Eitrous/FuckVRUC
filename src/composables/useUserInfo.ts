@@ -41,17 +41,20 @@ export function useUserInfo() {
             }) as UserInfoQueryResult;
 
             if (!result.ok) {
-                user_error.value = result.error ?? "查询失败";
-                userInfo.value = null;
+                if (!userInfo.value) {
+                    user_error.value = result.error ?? "查询失败";
+                }
                 return;
             }
             console.log("getUserInfo result:", result);
             userInfo.value = result.userInfo;
             user_fetchedAt.value = result.fetchedAt;
+            user_error.value = undefined;
         } catch (error) {
             console.error("Error fetching user info:", error);
-            user_error.value = "Failed to fetch user info.";
-            userInfo.value = null;
+            if (!userInfo.value) {
+                user_error.value = "Failed to fetch user info.";
+            }
         } finally {
             user_queryLoading.value = false;
         }

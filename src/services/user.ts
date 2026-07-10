@@ -18,6 +18,14 @@ export async function getLoginStatus(storeId?: string): Promise<LoginStatusQuery
       fetchedAt: Date.now(),
     };
   } catch (error) {
+    if (isNotAuthenticatedError(error)) {
+      return {
+        ok: true,
+        isLoggedIn: false,
+        fetchedAt: Date.now(),
+      };
+    }
+
     return {
       ok: false,
       isLoggedIn: false,

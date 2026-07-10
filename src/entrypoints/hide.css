@@ -1,57 +1,57 @@
 
 /* 标题底部小字 */
-.MuiBox-root.css-1dunxuf {
+html[data-fuckvruc-simplified] .MuiBox-root.css-1dunxuf {
     display: none !important;
 }
 
 /* 机器人 */
-.MuiBox-root.css-r1jum5,
-.MuiBox-root.css-6898m9,
-.MuiBox-root.css-wv8y1n {
+html[data-fuckvruc-simplified] .MuiBox-root.css-r1jum5,
+html[data-fuckvruc-simplified] .MuiBox-root.css-6898m9,
+html[data-fuckvruc-simplified] .MuiBox-root.css-wv8y1n {
     display: none !important;
 }
 
 /* 试运行水印 */
-.MuiBox-root.css-1nl44e3 {
+html[data-fuckvruc-simplified] .MuiBox-root.css-1nl44e3 {
     display: none !important;
 }
 
 /* AI融合门户入口 */
-.MuiBox-root.css-c4rkc,
-.right.fadeInRight.animated.MuiBox-root.css-1qq4t0r {
+html[data-fuckvruc-simplified] .MuiBox-root.css-c4rkc,
+html[data-fuckvruc-simplified] .right.fadeInRight.animated.MuiBox-root.css-1qq4t0r {
     display: none !important;
 }
 
 /* 数据可视门户入口 */
-.page_data.MuiBox-root.css-1t1u93a {
+html[data-fuckvruc-simplified] .page_data.MuiBox-root.css-1t1u93a {
     display: none !important;
 }
 
 /* 问AI输入框 */
-.MuiBox-root.css-1fi09qg,
-.MuiBox-root.css-pbq6m1 {
+html[data-fuckvruc-simplified] .MuiBox-root.css-1fi09qg,
+html[data-fuckvruc-simplified] .MuiBox-root.css-pbq6m1 {
     display: none !important;
 }
 
-.mtitle.MuiBox-root.css-51btz5 {
+html[data-fuckvruc-simplified] .mtitle.MuiBox-root.css-51btz5 {
     margin-bottom: 20px;
 }
 
 /* 资讯订阅 */
-.mbox.MuiBox-root.css-okn0d9 {
+html[data-fuckvruc-simplified] .mbox.MuiBox-root.css-okn0d9 {
     display: none !important;
 }
 
 /* 侧边栏 */
-.left.MuiBox-root.css-vc7il7 {
+html[data-fuckvruc-simplified] .left.MuiBox-root.css-vc7il7 {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
 }
 
 /* 底栏 */
-.MuiBox-root.css-buv9m3,
-.MuiBox-root.css-dlxrhm,
-.footer.MuiBox-root.css-pjoy3v {
+html[data-fuckvruc-simplified] .MuiBox-root.css-buv9m3,
+html[data-fuckvruc-simplified] .MuiBox-root.css-dlxrhm,
+html[data-fuckvruc-simplified] .footer.MuiBox-root.css-pjoy3v {
     display: none !important;
 }

@@ -444,7 +444,7 @@ async function openService(service: PortalService) {
 }
 
 function openLogin() {
-  browser.tabs.create({ url: "https://v.ruc.edu.cn/" });
+  browser.tabs.create({ url: "https://jw.ruc.edu.cn/" });
 }
 
 let userSyncPromise: Promise<void> | null = null;

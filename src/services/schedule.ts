@@ -1,5 +1,5 @@
 // src/services/schedule.ts
-import { getTokenCookie } from "@/utils/getTokenCookie";
+import { fetchJw, jwAuthErrorMessage } from "@/services/jwAuth";
 import type { ScheduleItem, ScheduleQueryResult } from "@/types/schedule";
 
 const SCHEDULE_API_URL =
@@ -7,31 +7,18 @@ const SCHEDULE_API_URL =
 
 export async function fetchSchedule(
   semester: string,
+  storeId?: string,
 ): Promise<ScheduleQueryResult> {
   try {
-    const token = await getTokenCookie();
-
-    if (!token) {
-      return {
-        ok: false,
-        items: [],
-        error: "没有找到 Token。请先登录微人大 (v.ruc.edu.cn) 后再查询。",
-        fetchedAt: Date.now(),
-      };
-    }
-
-    const res = await fetch(SCHEDULE_API_URL, {
+    const res = await fetchJw(SCHEDULE_API_URL, {
       method: "POST",
-      credentials: "include",
-      cache: "no-store",
       headers: {
         accept: "application/json, text/plain, */*",
         "content-type": "application/json",
         "x-requested-with": "XMLHttpRequest",
-        Token: token,
       },
       body: JSON.stringify({ jczy013id: semester, zc: "-1" }),
-    });
+    }, storeId);
 
     const text = await res.text();
 
@@ -39,7 +26,7 @@ export async function fetchSchedule(
       return {
         ok: false,
         items: [],
-        error: `HTTP ${res.status}: ${text.slice(0, 200)}`,
+        error: `教务系统请求失败（HTTP ${res.status}），请稍后重试。`,
         fetchedAt: Date.now(),
       };
     }
@@ -66,7 +53,7 @@ export async function fetchSchedule(
     return {
       ok: false,
       items: [],
-      error: `Failed to fetch schedule: ${err instanceof Error ? err.message : String(err)}`,
+      error: jwAuthErrorMessage(err),
       fetchedAt: Date.now(),
     };
   }

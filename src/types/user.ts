@@ -8,8 +8,14 @@ export type UserInfo = {
   raw?: unknown
 }
 
+export type UserAuthenticationState =
+  | 'authenticated'
+  | 'unauthenticated'
+  | 'unknown'
+
 export interface UserInfoQueryResult {
   ok: boolean
+  authState: UserAuthenticationState
   raw?: unknown
   userInfo: UserInfo | null
   error?: string

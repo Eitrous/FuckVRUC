@@ -6,6 +6,44 @@ import {
 export default defineContentScript({
   matches: ['https://v.ruc.edu.cn/*', 'https://my.ruc.edu.cn/*', 'https://jw.ruc.edu.cn/*'],
   main() {
+    if (location.hostname === 'jw.ruc.edu.cn') {
+      const readJwToken = () => {
+        try {
+          const token = localStorage.getItem('qzdatasoft')?.trim()
+          return token || null
+        } catch {
+          return null
+        }
+      }
+
+      const reportJwToken = async () => {
+        try {
+          await browser.runtime.sendMessage({
+            type: 'RUC_JW_TOKEN_OBSERVED',
+            token: readJwToken(),
+          })
+        } catch {
+          // The extension may have been reloaded while this tab stayed open.
+        }
+      }
+
+      browser.runtime.onMessage.addListener((message) => {
+        if (message?.type === 'RUC_JW_TOKEN_READ') {
+          return Promise.resolve({ token: readJwToken() })
+        }
+
+        return undefined
+      })
+
+      window.addEventListener('focus', () => void reportJwToken())
+      window.addEventListener('pageshow', () => void reportJwToken())
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) void reportJwToken()
+      })
+
+      void reportJwToken()
+    }
+
     const rootId = 'fuckvruc-root';
     const existingHost = document.getElementById(rootId);
 

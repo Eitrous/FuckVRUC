@@ -1,15 +1,20 @@
-import { getTokenCookie, getExistingTokenCookie } from "@/utils/getTokenCookie";
+import {
+  fetchJw,
+  isNotAuthenticatedError,
+  jwAuthErrorMessage,
+  resolveJwCredential,
+} from "@/services/jwAuth";
 import type { LoginStatusQueryResult, UserInfo, UserInfoQueryResult } from "@/types/user";
 
 const USER_INFO_API_URL = "https://jw.ruc.edu.cn/resService/jwxtpt/v1/jczy/userIndex/findUserDetail?resourceCode=GRZX01&apiCode=jwPublic.controller.UserIndexController.findUserDetail";
 
-export async function getLoginStatus(): Promise<LoginStatusQueryResult> {
+export async function getLoginStatus(storeId?: string): Promise<LoginStatusQueryResult> {
   try {
-    const token = await getExistingTokenCookie();
+    const credential = await resolveJwCredential({ storeId });
 
     return {
       ok: true,
-      isLoggedIn: !!token,
+      isLoggedIn: Boolean(credential),
       fetchedAt: Date.now(),
     };
   } catch (error) {
@@ -22,39 +27,26 @@ export async function getLoginStatus(): Promise<LoginStatusQueryResult> {
   }
 }
 
-export async function getUserInfo(): Promise<UserInfoQueryResult> {
+export async function getUserInfo(storeId?: string): Promise<UserInfoQueryResult> {
   try {
-    const token = await getTokenCookie();
-
-    if (!token) {
-      return {
-        ok: false,
-        userInfo: null,
-        error: "没有找到 Token。请先登录微人大 (v.ruc.edu.cn) 后再查询。",
-        fetchedAt: Date.now(),
-      };
-    }
-
-    const res = await fetch(USER_INFO_API_URL, {
+    const res = await fetchJw(USER_INFO_API_URL, {
       method: "POST",
-      credentials: "include",
-      cache: "no-store",
       headers: {
         accept: "application/json, text/plain, */*",
         "content-type": "application/json",
         "x-requested-with": "XMLHttpRequest",
-        Token: token,
       },
       body: JSON.stringify({"sctype":"rmdx","userType":"student"}),
-    });
+    }, storeId);
 
     const text = await res.text();
     
     if (!res.ok) {
       return {
         ok: false,
+        authState: "unknown",
         userInfo: null,
-        error: `HTTP ${res.status}: ${text.slice(0, 200)}`,
+        error: `教务系统请求失败（HTTP ${res.status}），请稍后重试。`,
         fetchedAt: Date.now(),
       };
     }
@@ -65,23 +57,47 @@ export async function getUserInfo(): Promise<UserInfoQueryResult> {
     } catch (err) {
       return {
         ok: false,
+        authState: "unknown",
         userInfo: null,
-        error: `Failed to parse response JSON: ${err instanceof Error ? err.message : String(err)}`,
+        error: "教务系统返回了无法识别的数据，请稍后重试。",
+        fetchedAt: Date.now(),
+      };
+    }
+
+    const userInfo = normalizeUserInfo(raw);
+
+    if (!userInfo) {
+      return {
+        ok: false,
+        authState: "unknown",
+        userInfo: null,
+        error: "教务系统没有返回用户信息，请稍后重试。",
         fetchedAt: Date.now(),
       };
     }
 
     return {
       ok: true,
+      authState: "authenticated",
       raw,
-      userInfo: normalizeUserInfo(raw),
+      userInfo,
       fetchedAt: Date.now(),
     };
   } catch (error) {
+    if (isNotAuthenticatedError(error)) {
+      return {
+        ok: true,
+        authState: "unauthenticated",
+        userInfo: null,
+        fetchedAt: Date.now(),
+      };
+    }
+
     return {
       ok: false,
+      authState: "unknown",
       userInfo: null,
-      error: `Error fetching user info: ${error instanceof Error ? error.message : String(error)}`,
+      error: jwAuthErrorMessage(error),
       fetchedAt: Date.now(),
     };
   }

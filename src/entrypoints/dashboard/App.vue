@@ -18,13 +18,13 @@ import type { CustomPortalServiceInput, PortalService } from "@/types/service";
 import { useGrades } from "@/composables/useGrades";
 import { useSchedules } from "@/composables/useSchedules";
 import { useUserInfo } from "@/composables/useUserInfo";
+import { Icon } from "@iconify/vue";
 
 const {
-  checkLoginStatus,
   getUserInfo,
   userInfo,
   user_error,
-  user_queryLoading,
+  user_status,
 } = useUserInfo();
 
 const {
@@ -52,11 +52,11 @@ const SELECTED_SCHEDULE_WEEK_STORAGE_KEY = "rucScheduleSelectedWeek";
 const CUSTOM_SERVICES_STORAGE_KEY = "rucCustomServices";
 
 const semesterTerms = [
-  { value: 1, label: "秋季学期" },
+  { value: 5, label: "暑假" },
+  { value: 4, label: "国际小学期" },
   { value: 2, label: "春季学期" },
   { value: 3, label: "寒假" },
-  { value: 4, label: "国际小学期" },
-  { value: 5, label: "暑假" },
+  { value: 1, label: "秋季学期" },
 ] as const;
 
 function currentAcademicYearStart(date = new Date()) {
@@ -101,8 +101,8 @@ const activeView = ref<DashboardViewId>("services");
 
 const toolbarItems: ToolbarItem[] = [
   { id: "services", label: "服务入口" },
-  { id: "schedule", label: "课表" },
-  { id: "grades", label: "成绩" },
+  { id: "schedule", label: "课表查询" },
+  { id: "grades", label: "成绩查询" },
 ];
 
 const viewComponentMap = {
@@ -151,6 +151,18 @@ const icons = {
   earth: icon(
     `<path d="M0 0h256v256H0z" fill="none" />
   <path fill="currentColor" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m0 16a87.5 87.5 0 0 1 48 14.28V74l-22.17 25.74l-31.47 4.26l-.31-.22l-19.67-12.86a16 16 0 0 0-22.51 4.18l-20.94 31.3a16 16 0 0 0-2.7 8.81L56 171.44l-3.27 2.15A88 88 0 0 1 128 40M62.29 186.47l2.52-1.65A16 16 0 0 0 72 171.53l.21-36.23L93.17 104a4 4 0 0 0 .32.22l19.67 12.87a15.94 15.94 0 0 0 11.35 2.77l31.49-4.27a16 16 0 0 0 10-5.41l22.17-25.76A16 16 0 0 0 192 74v-6.33A87.87 87.87 0 0 1 211.77 155l-16.14-14.76a16 16 0 0 0-16.93-3l-30.46 12.65a16.08 16.08 0 0 0-9.68 12.45l-2.39 16.19a16 16 0 0 0 11.77 17.81L169.4 202l2.36 2.37a87.88 87.88 0 0 1-109.47-17.9M185 195l-4.3-4.31a16 16 0 0 0-7.26-4.18L152 180.85l2.39-16.19L184.84 152L205 170.48A88.4 88.4 0 0 1 185 195" />`
+  ),
+  loading: icon(
+    `<path d="M0 0h24v24H0z" fill="none" />
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+    <path stroke-dasharray="18" d="M12 3c4.97 0 9 4.03 9 9">
+      <animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="18;0" />
+      <animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12" />
+    </path>
+    <path stroke-dasharray="60" d="M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9Z" opacity=".3">
+      <animate fill="freeze" attributeName="stroke-dashoffset" dur="1.2s" values="60;0" />
+    </path>
+  </g>`
   )
 };
 
@@ -436,23 +448,44 @@ function openLogin() {
 }
 
 let userSyncPromise: Promise<void> | null = null;
+let userSyncPending = false;
+let userSyncDisposed = false;
+let lastUserSyncAt = 0;
+let userSyncTimer: number | undefined;
+const USER_SYNC_MIN_INTERVAL_MS = 2_000;
 
 async function syncUserInfo(force = false) {
-  if (userSyncPromise) return userSyncPromise;
+  if (force && userSyncTimer !== undefined) {
+    window.clearTimeout(userSyncTimer);
+    userSyncTimer = undefined;
+  }
+
+  if (userSyncPromise) {
+    userSyncPending = true;
+    return userSyncPromise;
+  }
+
+  const elapsed = Date.now() - lastUserSyncAt;
+  if (!force && elapsed < USER_SYNC_MIN_INTERVAL_MS) {
+    if (userSyncTimer === undefined) {
+      userSyncTimer = window.setTimeout(() => {
+        userSyncTimer = undefined;
+        void syncUserInfo(true);
+      }, USER_SYNC_MIN_INTERVAL_MS - elapsed);
+    }
+    return;
+  }
 
   userSyncPromise = (async () => {
-    const loggedIn = await checkLoginStatus();
-
-    if (!loggedIn) {
-      userInfo.value = null;
-      return;
-    }
-
-    if (force || !userInfo.value) {
-      await getUserInfo();
-    }
+    await getUserInfo();
   })().finally(() => {
+    lastUserSyncAt = Date.now();
     userSyncPromise = null;
+
+    if (userSyncPending && !userSyncDisposed) {
+      userSyncPending = false;
+      void syncUserInfo(true);
+    }
   });
 
   return userSyncPromise;
@@ -536,6 +569,11 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  userSyncDisposed = true;
+  userSyncPending = false;
+  if (userSyncTimer !== undefined) {
+    window.clearTimeout(userSyncTimer);
+  }
   window.removeEventListener("focus", syncWhenVisible);
   document.removeEventListener("visibilitychange", syncWhenVisible);
 });
@@ -547,7 +585,7 @@ onUnmounted(() => {
     :toolbar-items="toolbarItems"
     :user-info="userInfo"
     :user-error="user_error"
-    :user-loading="user_queryLoading"
+    :user-status="user_status"
     @login="openLogin"
     @select-view="selectView"
     @retry-user-info="retryUserInfo"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import GradesView from "./components/GradesView.vue";
 import ScheduleView from "./components/ScheduleView.vue";
@@ -18,7 +18,50 @@ import type { CustomPortalServiceInput, PortalService } from "@/types/service";
 import { useGrades } from "@/composables/useGrades";
 import { useSchedules } from "@/composables/useSchedules";
 import { useUserInfo } from "@/composables/useUserInfo";
-import { Icon } from "@iconify/vue";
+import DashboardMessage  from "./components/DashboardMessage.vue";
+
+type DashboardMessageType = "info" | "warning";
+
+const dashboardMessage = ref({
+  visible: false,
+  text: "",
+  type: "info" as DashboardMessageType,
+});
+
+let dashboardMessageTimer: number | undefined;
+
+function clearDashboardMessageTimer() {
+  if (dashboardMessageTimer !== undefined) {
+    window.clearTimeout(dashboardMessageTimer);
+    dashboardMessageTimer = undefined;
+  }
+}
+
+function hideDashboardMessage() {
+  clearDashboardMessageTimer();
+  dashboardMessage.value.visible = false;
+}
+
+function showDashboardMessage(
+  text: string,
+  type: DashboardMessageType = "info",
+  duration = 3200,
+) {
+  clearDashboardMessageTimer();
+
+  dashboardMessage.value = {
+    visible: true,
+    text,
+    type,
+  };
+
+  if (duration > 0) {
+    dashboardMessageTimer = window.setTimeout(() => {
+      dashboardMessage.value.visible = false;
+      dashboardMessageTimer = undefined;
+    }, duration);
+  }
+}
 
 const {
   getUserInfo,
@@ -380,6 +423,7 @@ async function saveCustomServices(services: PortalService[]) {
     });
   } catch (err) {
     console.error("Failed to save custom services:", err);
+    showDashboardMessage("保存自定义服务失败", "warning", 5000);
   }
 }
 
@@ -439,8 +483,11 @@ async function openService(service: PortalService) {
   if (service.id === "mail") {
     url = await resolveMailUrl();
   }
-
-  browser.tabs.create({ url });
+  if (url === '') {
+    showDashboardMessage("无法打开邮箱服务，请手动打开一次邮箱", "warning", 5000);
+  } else {
+    browser.tabs.create({ url });
+  }
 }
 
 function openLogin() {
@@ -559,6 +606,24 @@ function retryUserInfo() {
   void syncUserInfo(true);
 }
 
+watch(
+  error,
+  (message) => {
+    if (message) {
+      showDashboardMessage("查询失败，请先登录教务系统", "warning", 5000);
+    }
+  },
+);
+
+watch(
+  schedule_error,
+  (message) => {
+    if (message) {
+      showDashboardMessage("查询失败，请先登录教务系统", "warning", 5000);
+    }
+  },
+);
+
 onMounted(() => {
   void syncUserInfo(true);
   void restoreCustomServices();
@@ -569,6 +634,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  clearDashboardMessageTimer();
   userSyncDisposed = true;
   userSyncPending = false;
   if (userSyncTimer !== undefined) {
@@ -589,6 +655,13 @@ onUnmounted(() => {
     @login="openLogin"
     @select-view="selectView"
     @retry-user-info="retryUserInfo"
+    @show-dashboard-message="showDashboardMessage"
+  />
+  <DashboardMessage
+    :visible="dashboardMessage.visible"
+    :text="dashboardMessage.text"
+    :type="dashboardMessage.type"
+    @close="hideDashboardMessage"
   />
   <main class="dashboard-page">
     <div class="dashboard-shell">

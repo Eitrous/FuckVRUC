@@ -334,10 +334,6 @@ function updateWeek(event: Event) {
       </div>
     </header>
 
-    <p v-if="props.error" class="error-message">
-      {{ props.error }}
-    </p>
-
     <div v-if="props.loading" class="skeleton-stack" aria-label="课表加载中">
       <span class="skeleton-line is-wide"></span>
       <span class="skeleton-line"></span>

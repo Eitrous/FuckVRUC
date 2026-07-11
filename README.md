@@ -28,7 +28,7 @@ todo:
 
 ## 我该如何使用
 
-1. 前往 Release 页下载插件
+1. 前往 [Releases](https://github.com/Eitrous/FuckVRUC/releases) 页下载插件
 2. 给你的浏览器安装这个插件。请自行搜索「Chrome插件安装方法」
 
 ## 其他

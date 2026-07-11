@@ -20,9 +20,15 @@ function openDashboard() {
   });
 }
 
-function openPortal() {
+function openVRUC() {
   browser.tabs.create({
     url: 'https://v.ruc.edu.cn/',
+  });
+}
+
+function openMyRUC() {
+  browser.tabs.create({
+    url: 'https://my.ruc.edu.cn/',
   });
 }
 
@@ -78,27 +84,39 @@ onMounted(() => {
 
 <template>
   <main class="popup-panel">
-    <h2>微人大 ++</h2>
-
-    <div class="popup-actions">
+    <div class="popup-header">
+      <h2>微人大 ++</h2>
       <button
-        class="popup-button"
+        class="popup-header-button"
         type="button"
         @click="openDashboard"
       >
         打开仪表盘
       </button>
-
-      <button
-        class="popup-button"
-        type="button"
-        @click="openPortal"
-      >
-        打开微人大
-      </button>
     </div>
 
-    <section class="settings-section" aria-labelledby="settings-title">
+    <section class="section" aria-labelledby="actions-title">
+      <h3 id="actions-title">打开</h3>
+      <div class="popup-actions">
+        <button
+          class="popup-button"
+          type="button"
+          @click="openVRUC"
+        >
+          微人大
+        </button>
+
+        <button
+          class="popup-button"
+          type="button"
+          @click="openMyRUC"
+        >
+          数智人大
+        </button>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="settings-title">
       <h3 id="settings-title">设置</h3>
 
       <label class="switch-row">
@@ -152,8 +170,27 @@ onMounted(() => {
 .popup-panel h2 {
   font-size: 18px;
   font-weight: 650;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.popup-header-button {
+  border: none;
+  background: none;
+  margin: 0;
+  padding: 0;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.popup-header-button:hover {
+  text-decoration: underline;
 }
 
 .popup-actions {
@@ -174,6 +211,9 @@ onMounted(() => {
   text-align: left;
   cursor: pointer;
   border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .popup-button:hover {
@@ -189,13 +229,13 @@ onMounted(() => {
   outline-offset: 2px;
 }
 
-.settings-section {
+.section {
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--border);
 }
 
-.settings-section h3 {
+.section h3 {
   font-size: 13px;
   font-weight: 650;
   color: var(--text-secondary);

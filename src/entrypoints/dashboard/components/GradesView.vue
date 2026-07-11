@@ -166,6 +166,7 @@ const overviewMetrics = computed(() => [
 function queryGrades() {
   emit("query-grades");
 }
+
 </script>
 
 <template>
@@ -234,10 +235,6 @@ function queryGrades() {
           </svg>
       </button>
     </header>
-
-    <p v-if="props.error" class="error-message">
-      {{ props.error }}
-    </p>
 
     <div v-if="props.loading" class="skeleton-stack" aria-label="成绩加载中">
       <span class="skeleton-line is-wide"></span>

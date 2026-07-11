@@ -15,7 +15,7 @@ export async function resolveMailUrl(): Promise<string> {
     } catch (error) {
         console.error('Failed to resolve mail URL:', error)
     }
-    return 'https://v.ruc.edu.cn/schoolcard/MailCard/'
+    return '';
     
 }
 

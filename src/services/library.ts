@@ -1,10 +1,28 @@
 import {
   LIBRARY_BUILDINGS,
   type LibraryQueryErrorCode,
+  type LibraryReservationErrorCode,
+  type LibraryReservationReceipt,
+  type LibraryReservationStartValue,
+  type LibraryReservationSubmitParams,
+  type LibraryReservationSubmitResult,
   type LibraryRoom,
   type LibraryRoomPage,
   type LibraryRoomQueryParams,
   type LibraryRoomQueryResult,
+  type LibrarySeat,
+  type LibrarySeatEndTimesQueryParams,
+  type LibrarySeatEndTimesQueryResult,
+  type LibrarySeatList,
+  type LibrarySeatQueryParams,
+  type LibrarySeatQueryResult,
+  type LibrarySeatReservationDetails,
+  type LibrarySeatReservationDetailsQueryParams,
+  type LibrarySeatReservationDetailsQueryResult,
+  type LibrarySeatStatus,
+  type LibraryTimeOption,
+  type LibraryTimelineFreePeriod,
+  type LibraryTimelineMark,
 } from '@/types/library'
 import {
   rejectLibraryToken,
@@ -41,7 +59,19 @@ class LibraryQueryError extends Error {
 function errorResult(
   errorCode: LibraryQueryErrorCode,
   error: string,
-): LibraryRoomQueryResult {
+): Extract<LibraryRoomQueryResult, { ok: false }> {
+  return {
+    ok: false,
+    error,
+    errorCode,
+    fetchedAt: Date.now(),
+  }
+}
+
+function reservationErrorResult(
+  errorCode: LibraryReservationErrorCode,
+  error: string,
+): Extract<LibraryReservationSubmitResult, { ok: false }> {
   return {
     ok: false,
     error,
@@ -256,7 +286,7 @@ async function createHmacHeaders(hmacKey: string) {
   }
 }
 
-async function getRequestHeaders(token: string) {
+async function getSystemSettings(token: string) {
   const envelope = await postJson(
     SYSTEM_SETTINGS_URL,
     {},
@@ -285,10 +315,15 @@ async function getRequestHeaders(token: string) {
     )
   }
 
+  return envelope.data
+}
+
+async function getRequestHeaders(token: string) {
+  const settings = await getSystemSettings(token)
   const headers = baseHeaders(token)
 
-  if (hmacIsEnabled(envelope.data.hmac)) {
-    const decryptedKey = await decryptHmacKey(envelope.data.hmacKey)
+  if (hmacIsEnabled(settings.hmac)) {
+    const decryptedKey = await decryptHmacKey(settings.hmacKey)
     const hmacHeaders = await createHmacHeaders(decryptedKey)
 
     Object.entries(hmacHeaders).forEach(([name, value]) => {
@@ -470,6 +505,463 @@ function normalizeQueryParams(params: LibraryRoomQueryParams) {
   }
 }
 
+function normalizeSeatQueryParams(params: LibrarySeatQueryParams) {
+  const roomId = params?.roomId
+  const beginMinute = params?.beginMinute
+  const endMinute = params?.endMinute
+
+  if (
+    typeof roomId !== 'string' ||
+    !/^\d+$/.test(roomId) ||
+    !isValidQueryDate(params?.date) ||
+    typeof beginMinute !== 'number' ||
+    !Number.isInteger(beginMinute) ||
+    beginMinute < -1 ||
+    beginMinute > 1_439 ||
+    typeof endMinute !== 'number' ||
+    !Number.isInteger(endMinute) ||
+    endMinute < 0 ||
+    endMinute > 1_439 ||
+    (endMinute > 0 && (beginMinute < 0 || endMinute <= beginMinute))
+  ) {
+    throw new LibraryQueryError(
+      'API_ERROR',
+      '座位查询条件无效，请检查房间、日期和时间。',
+    )
+  }
+
+  return {
+    roomId,
+    date: params.date,
+    body: {
+      beginMinute,
+      endMinute,
+      minMinute: 0,
+    },
+  }
+}
+
+function normalizeSeatStatus(rawStatus: string): LibrarySeatStatus {
+  if (
+    rawStatus === 'FREE' ||
+    rawStatus === 'IN_USE' ||
+    rawStatus === 'AWAY'
+  ) {
+    return rawStatus
+  }
+
+  return 'UNKNOWN'
+}
+
+function normalizeSeat(value: unknown): LibrarySeat | undefined {
+  if (!isRecord(value)) return undefined
+
+  if (
+    typeof value.id !== 'string' ||
+    !value.id.trim() ||
+    typeof value.label !== 'string' ||
+    !value.label.trim() ||
+    typeof value.name !== 'string' ||
+    typeof value.status !== 'string' ||
+    !value.status.trim() ||
+    typeof value.afterFree !== 'boolean'
+  ) {
+    return undefined
+  }
+
+  return {
+    id: value.id,
+    label: value.label,
+    name: value.name,
+    status: normalizeSeatStatus(value.status),
+    rawStatus: value.status,
+    afterFree: value.afterFree,
+    raw: value,
+  }
+}
+
+function normalizeSeatList(value: unknown): LibrarySeatList {
+  if (!isRecord(value)) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的座位数据。',
+    )
+  }
+
+  const items = Object.values(value).map(normalizeSeat)
+
+  if (items.some((seat) => seat === undefined)) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的座位数据。',
+    )
+  }
+
+  const normalizedItems = items as LibrarySeat[]
+
+  return {
+    items: normalizedItems,
+    totalCount: normalizedItems.length,
+    freeCount: normalizedItems.filter((seat) => seat.status === 'FREE').length,
+  }
+}
+
+function normalizeNumericId(value: unknown, subject: string) {
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+    throw new LibraryQueryError('API_ERROR', `${subject}无效，请重新选择。`)
+  }
+
+  return value
+}
+
+function normalizeReservationDate(value: unknown): string {
+  if (!isValidQueryDate(value)) {
+    throw new LibraryQueryError('API_ERROR', '预约日期无效，请重新选择。')
+  }
+
+  return value as string
+}
+
+function shanghaiDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  )
+
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    minute: Number(values.hour) * 60 + Number(values.minute),
+  }
+}
+
+function normalizeStartValue(
+  value: unknown,
+  date: string,
+): LibraryReservationStartValue {
+  if (value === 'now') {
+    if (date !== shanghaiDateParts().date) {
+      throw new LibraryQueryError(
+        'API_ERROR',
+        '“现在”仅可用于当天预约，请重新选择开始时间。',
+      )
+    }
+    return value
+  }
+
+  if (
+    typeof value !== 'number' ||
+    !Number.isInteger(value) ||
+    value < 0 ||
+    value > 1_439
+  ) {
+    throw new LibraryQueryError('API_ERROR', '预约开始时间无效。')
+  }
+
+  return value
+}
+
+function normalizeDetailsQueryParams(
+  params: LibrarySeatReservationDetailsQueryParams,
+) {
+  return {
+    seatId: normalizeNumericId(params?.seatId, '座位'),
+    date: normalizeReservationDate(params?.date),
+  }
+}
+
+function normalizeEndTimesQueryParams(params: LibrarySeatEndTimesQueryParams) {
+  const date = normalizeReservationDate(params?.date)
+  const startTime = normalizeStartValue(params?.startTime, date)
+
+  return {
+    seatId: normalizeNumericId(params?.seatId, '座位'),
+    date,
+    startTime,
+    requestMinute:
+      startTime === 'now' ? shanghaiDateParts().minute : startTime,
+  }
+}
+
+function normalizeSubmitParams(params: LibraryReservationSubmitParams) {
+  const date = normalizeReservationDate(params?.date)
+  const startTime = normalizeStartValue(params?.startTime, date)
+  const endTime = params?.endTime
+  const comparisonStart =
+    startTime === 'now' ? shanghaiDateParts().minute : startTime
+
+  if (
+    typeof endTime !== 'number' ||
+    !Number.isInteger(endTime) ||
+    endTime < 0 ||
+    endTime > 1_439 ||
+    endTime <= comparisonStart
+  ) {
+    throw new LibraryQueryError(
+      'API_ERROR',
+      '预约结束时间无效，请重新选择。',
+    )
+  }
+
+  return {
+    seatId: normalizeNumericId(params?.seatId, '座位'),
+    date,
+    startTime,
+    endTime,
+    requestStartTime: startTime === 'now' ? -1 : startTime,
+  }
+}
+
+function normalizePercentage(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 &&
+    value <= 100
+    ? value
+    : undefined
+}
+
+function normalizeTimelineMark(value: unknown): LibraryTimelineMark | undefined {
+  if (!isRecord(value)) return undefined
+
+  const left = normalizePercentage(value.left)
+  if (
+    typeof value.label !== 'string' ||
+    !value.label.trim() ||
+    left === undefined
+  ) {
+    return undefined
+  }
+
+  return { label: value.label.trim(), left }
+}
+
+function normalizeTimelineFreePeriod(
+  value: unknown,
+): LibraryTimelineFreePeriod | undefined {
+  if (!isRecord(value)) return undefined
+
+  const left = normalizePercentage(value.left)
+  const width = normalizePercentage(value.width)
+  if (
+    typeof value.label !== 'string' ||
+    !value.label.trim() ||
+    left === undefined ||
+    width === undefined ||
+    left + width > 100.1
+  ) {
+    return undefined
+  }
+
+  return { label: value.label.trim(), left, width }
+}
+
+function normalizeTimeline(value: unknown) {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.markList) ||
+    !Array.isArray(value.freeList)
+  ) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的座位时间线。',
+    )
+  }
+
+  const marks = value.markList.map(normalizeTimelineMark)
+  const freePeriods = value.freeList.map(normalizeTimelineFreePeriod)
+
+  if (
+    marks.some((mark) => mark === undefined) ||
+    freePeriods.some((period) => period === undefined)
+  ) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的座位时间线。',
+    )
+  }
+
+  return {
+    marks: marks as LibraryTimelineMark[],
+    freePeriods: freePeriods as LibraryTimelineFreePeriod[],
+  }
+}
+
+function normalizeTimeOptions<T extends LibraryReservationStartValue>(
+  value: unknown,
+  allowNow: boolean,
+): LibraryTimeOption<T>[] {
+  if (!Array.isArray(value)) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的预约时间。',
+    )
+  }
+
+  const options = value.map((option) => {
+    if (
+      !Array.isArray(option) ||
+      option.length !== 2 ||
+      typeof option[1] !== 'string' ||
+      !option[1].trim()
+    ) {
+      return undefined
+    }
+
+    const rawValue = option[0]
+    if (allowNow && rawValue === 'now') {
+      return { value: 'now', label: option[1].trim() }
+    }
+
+    const numericValue =
+      typeof rawValue === 'number'
+        ? rawValue
+        : typeof rawValue === 'string' && /^\d+$/.test(rawValue.trim())
+          ? Number(rawValue)
+          : undefined
+
+    if (
+      numericValue === undefined ||
+      !Number.isInteger(numericValue) ||
+      numericValue < 0 ||
+      numericValue > 1_439
+    ) {
+      return undefined
+    }
+
+    return { value: numericValue, label: option[1].trim() }
+  })
+
+  if (options.some((option) => option === undefined)) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的预约时间。',
+    )
+  }
+
+  return options as LibraryTimeOption<T>[]
+}
+
+function requiredString(
+  value: Record<string, unknown>,
+  key: string,
+  allowEmpty = false,
+) {
+  const candidate = value[key]
+  if (
+    typeof candidate !== 'string' ||
+    (!allowEmpty && !candidate.trim())
+  ) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的预约结果。',
+    )
+  }
+
+  return candidate.trim()
+}
+
+function normalizeReservationReceipt(
+  value: unknown,
+  params: ReturnType<typeof normalizeSubmitParams>,
+): LibraryReservationReceipt {
+  if (!isRecord(value)) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的预约结果。',
+    )
+  }
+
+  const id = requiredString(value, 'id')
+  const roomId = requiredString(value, 'roomId')
+  const seatId = requiredString(value, 'seatId')
+  const date = requiredString(value, 'makeDateStr')
+  const beginMinute = asNonNegativeInteger(value.makeBegin)
+  const endMinute = asNonNegativeInteger(value.makeEnd)
+
+  if (
+    !/^\d+$/.test(id) ||
+    !/^\d+$/.test(roomId) ||
+    !/^\d+$/.test(seatId) ||
+    seatId !== params.seatId ||
+    date !== params.date ||
+    beginMinute === undefined ||
+    beginMinute > 1_439 ||
+    endMinute === undefined ||
+    endMinute > 1_439 ||
+    endMinute <= beginMinute ||
+    endMinute !== params.endTime ||
+    (params.startTime !== 'now' && beginMinute !== params.startTime)
+  ) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的预约结果。',
+    )
+  }
+
+  return {
+    id,
+    receipt: requiredString(value, 'receipt'),
+    roomId,
+    seatId,
+    seatLabel: requiredString(value, 'seatLabel'),
+    date,
+    beginMinute,
+    endMinute,
+    beginLabel: requiredString(value, 'makeBeginStr'),
+    endLabel: requiredString(value, 'makeEndStr'),
+    status: requiredString(value, 'status'),
+    buildingName: requiredString(value, 'buildName', true),
+    floorName: requiredString(value, 'floorName', true),
+    roomName: requiredString(value, 'roomName', true),
+    location: requiredString(value, 'location', true),
+    message: requiredString(value, 'message', true),
+  }
+}
+
+function normalizeCaptchaMode(value: unknown): 0 | 1 | 2 | undefined {
+  const numeric =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && /^[012]$/.test(value.trim())
+        ? Number(value)
+        : undefined
+
+  return numeric === 0 || numeric === 1 || numeric === 2
+    ? numeric
+    : undefined
+}
+
+async function postProtectedQuery(
+  token: string,
+  url: string,
+  context: string,
+) {
+  const headers = await getRequestHeaders(token)
+  const envelope = await postJson(url, {}, headers, context)
+
+  if (isAuthFailure(envelope)) {
+    throw new LibraryQueryError(
+      'AUTH_REQUIRED',
+      '图书馆登录已过期，请重新登录后重试。',
+    )
+  }
+
+  if (envelope.status === false || envelope.success === false) {
+    throw new LibraryQueryError(
+      'API_ERROR',
+      apiMessage(envelope, `${context}，请稍后重试。`),
+    )
+  }
+
+  return envelope.data
+}
+
 export async function fetchLibraryRooms(
   params: LibraryRoomQueryParams,
   storeId?: string,
@@ -546,6 +1038,382 @@ export async function fetchLibraryRooms(
     return errorResult(
       'API_ERROR',
       '图书馆余座查询失败，请稍后重试。',
+    )
+  }
+}
+
+export async function fetchLibrarySeats(
+  params: LibrarySeatQueryParams,
+  storeId?: string,
+  windowId?: number,
+): Promise<LibrarySeatQueryResult> {
+  let token: string | undefined
+
+  try {
+    const normalized = normalizeSeatQueryParams(params)
+    const authentication = await resolveOrStartLibraryAuthentication(
+      storeId,
+      windowId,
+    )
+
+    if (authentication.status === 'pending') {
+      return errorResult(
+        'AUTH_PENDING',
+        '正在通过统一身份认证连接图书馆。',
+      )
+    }
+
+    if (authentication.status === 'failed') {
+      return errorResult(
+        'AUTH_REQUIRED',
+        '未能完成图书馆自动登录，请在打开的登录页完成认证后重试。',
+      )
+    }
+
+    token = authentication.token
+
+    const headers = await getRequestHeaders(token)
+    const url = `${LIBRARY_API_ROOT}/frontApi/res/freeSeatIdsDuration/${encodeURIComponent(normalized.roomId)}/${normalized.date}`
+    const envelope = await postJson(
+      url,
+      normalized.body,
+      headers,
+      '图书馆座位查询失败',
+    )
+
+    if (isAuthFailure(envelope)) {
+      await rejectLibraryToken(token, storeId)
+      return errorResult(
+        'AUTH_PENDING',
+        '图书馆登录已过期，正在重新进行统一身份认证。',
+      )
+    }
+
+    if (envelope.status === false || envelope.success === false) {
+      return errorResult(
+        'API_ERROR',
+        apiMessage(envelope, '图书馆座位查询失败，请稍后重试。'),
+      )
+    }
+
+    const list = normalizeSeatList(envelope.data)
+
+    return {
+      ok: true,
+      list,
+      fetchedAt: Date.now(),
+    }
+  } catch (error) {
+    if (error instanceof LibraryQueryError) {
+      if (error.code === 'AUTH_REQUIRED' && token) {
+        await rejectLibraryToken(token, storeId)
+        return errorResult(
+          'AUTH_PENDING',
+          '图书馆登录已过期，正在重新进行统一身份认证。',
+        )
+      }
+      return errorResult(error.code, error.message)
+    }
+
+    return errorResult(
+      'API_ERROR',
+      '图书馆座位查询失败，请稍后重试。',
+    )
+  }
+}
+
+export async function fetchLibrarySeatReservationDetails(
+  params: LibrarySeatReservationDetailsQueryParams,
+  storeId?: string,
+  windowId?: number,
+): Promise<LibrarySeatReservationDetailsQueryResult> {
+  let token: string | undefined
+
+  try {
+    const normalized = normalizeDetailsQueryParams(params)
+    const authentication = await resolveOrStartLibraryAuthentication(
+      storeId,
+      windowId,
+    )
+
+    if (authentication.status === 'pending') {
+      return errorResult(
+        'AUTH_PENDING',
+        '正在通过统一身份认证连接图书馆。',
+      )
+    }
+
+    if (authentication.status === 'failed') {
+      return errorResult(
+        'AUTH_REQUIRED',
+        '未能完成图书馆自动登录，请在打开的登录页完成认证后重试。',
+      )
+    }
+
+    token = authentication.token
+    const encodedSeatId = encodeURIComponent(normalized.seatId)
+    const [timelineData, startTimesData] = await Promise.all([
+      postProtectedQuery(
+        token,
+        `${LIBRARY_API_ROOT}/frontApi/res/getTimeLine/${encodedSeatId}/${normalized.date}`,
+        '读取座位时间线失败',
+      ),
+      postProtectedQuery(
+        token,
+        `${LIBRARY_API_ROOT}/frontApi/res/getStartTimes/${encodedSeatId}/${normalized.date}`,
+        '读取预约开始时间失败',
+      ),
+    ])
+    const startTimes =
+      normalizeTimeOptions<LibraryReservationStartValue>(
+        startTimesData,
+        true,
+      )
+
+    if (
+      normalized.date !== shanghaiDateParts().date &&
+      startTimes.some((option) => option.value === 'now')
+    ) {
+      throw new LibraryQueryError(
+        'INVALID_RESPONSE',
+        '图书馆系统返回了无效的预约开始时间。',
+      )
+    }
+
+    const details: LibrarySeatReservationDetails = {
+      timeline: normalizeTimeline(timelineData),
+      startTimes,
+    }
+
+    return {
+      ok: true,
+      details,
+      fetchedAt: Date.now(),
+    }
+  } catch (error) {
+    if (error instanceof LibraryQueryError) {
+      if (error.code === 'AUTH_REQUIRED' && token) {
+        await rejectLibraryToken(token, storeId)
+        return errorResult(
+          'AUTH_PENDING',
+          '图书馆登录已过期，正在重新进行统一身份认证。',
+        )
+      }
+      return errorResult(error.code, error.message)
+    }
+
+    return errorResult(
+      'API_ERROR',
+      '读取座位预约信息失败，请稍后重试。',
+    )
+  }
+}
+
+export async function fetchLibrarySeatEndTimes(
+  params: LibrarySeatEndTimesQueryParams,
+  storeId?: string,
+  windowId?: number,
+): Promise<LibrarySeatEndTimesQueryResult> {
+  let token: string | undefined
+
+  try {
+    const normalized = normalizeEndTimesQueryParams(params)
+    const authentication = await resolveOrStartLibraryAuthentication(
+      storeId,
+      windowId,
+    )
+
+    if (authentication.status === 'pending') {
+      return errorResult(
+        'AUTH_PENDING',
+        '正在通过统一身份认证连接图书馆。',
+      )
+    }
+
+    if (authentication.status === 'failed') {
+      return errorResult(
+        'AUTH_REQUIRED',
+        '未能完成图书馆自动登录，请在打开的登录页完成认证后重试。',
+      )
+    }
+
+    token = authentication.token
+    const data = await postProtectedQuery(
+      token,
+      `${LIBRARY_API_ROOT}/frontApi/res/getEndTimes/${encodeURIComponent(normalized.seatId)}/${normalized.date}/${normalized.requestMinute}`,
+      '读取预约结束时间失败',
+    )
+
+    return {
+      ok: true,
+      options: normalizeTimeOptions<number>(data, false),
+      fetchedAt: Date.now(),
+    }
+  } catch (error) {
+    if (error instanceof LibraryQueryError) {
+      if (error.code === 'AUTH_REQUIRED' && token) {
+        await rejectLibraryToken(token, storeId)
+        return errorResult(
+          'AUTH_PENDING',
+          '图书馆登录已过期，正在重新进行统一身份认证。',
+        )
+      }
+      return errorResult(error.code, error.message)
+    }
+
+    return errorResult(
+      'API_ERROR',
+      '读取预约结束时间失败，请稍后重试。',
+    )
+  }
+}
+
+export async function submitLibraryReservation(
+  params: LibraryReservationSubmitParams,
+  storeId?: string,
+  windowId?: number,
+): Promise<LibraryReservationSubmitResult> {
+  let token: string | undefined
+  let freeBookStarted = false
+
+  try {
+    const normalized = normalizeSubmitParams(params)
+    const authentication = await resolveOrStartLibraryAuthentication(
+      storeId,
+      windowId,
+    )
+
+    if (authentication.status === 'pending') {
+      return reservationErrorResult(
+        'AUTH_PENDING',
+        '正在通过统一身份认证连接图书馆，请稍后重新确认预约。',
+      )
+    }
+
+    if (authentication.status === 'failed') {
+      return reservationErrorResult(
+        'AUTH_REQUIRED',
+        '未能完成图书馆自动登录，请在打开的登录页完成认证后重试。',
+      )
+    }
+
+    token = authentication.token
+    const settings = await getSystemSettings(token)
+    const captchaMode = normalizeCaptchaMode(settings.mackCaptcha)
+
+    if (captchaMode === undefined || captchaMode === 2) {
+      return reservationErrorResult(
+        'CAPTCHA_REQUIRED',
+        '本次预约需要完成图书馆验证码，请前往图书馆系统提交。',
+      )
+    }
+
+    if (captchaMode === 1) {
+      let captchaEnvelope: ApiEnvelope
+
+      try {
+        const captchaHeaders = await getRequestHeaders(token)
+        captchaEnvelope = await postJson(
+          `${LIBRARY_API_ROOT}/cap/cg/checkHigh`,
+          {},
+          captchaHeaders,
+          '检查图书馆验证码状态失败',
+        )
+      } catch (error) {
+        if (
+          error instanceof LibraryQueryError &&
+          error.code === 'AUTH_REQUIRED'
+        ) {
+          throw error
+        }
+
+        return reservationErrorResult(
+          'CAPTCHA_REQUIRED',
+          '无法确认图书馆验证码状态，请前往图书馆系统提交。',
+        )
+      }
+
+      if (isAuthFailure(captchaEnvelope)) {
+        throw new LibraryQueryError(
+          'AUTH_REQUIRED',
+          '图书馆登录已过期，请重新登录后重试。',
+        )
+      }
+
+      if (
+        captchaEnvelope.status === false ||
+        captchaEnvelope.success === false ||
+        typeof captchaEnvelope.data !== 'boolean' ||
+        captchaEnvelope.data
+      ) {
+        return reservationErrorResult(
+          'CAPTCHA_REQUIRED',
+          '本次预约需要完成图书馆验证码，请前往图书馆系统提交。',
+        )
+      }
+    }
+
+    const submissionHeaders = await getRequestHeaders(token)
+    const submissionUrl =
+      `${LIBRARY_API_ROOT}/frontApi/make/freeBook/` +
+      `${encodeURIComponent(normalized.seatId)}/${normalized.date}/` +
+      `${normalized.requestStartTime}/${normalized.endTime}?capToken=capToken`
+
+    freeBookStarted = true
+    const envelope = await postJson(
+      submissionUrl,
+      {},
+      submissionHeaders,
+      '提交图书馆预约失败',
+    )
+
+    if (isAuthFailure(envelope)) {
+      await rejectLibraryToken(token, storeId)
+      return reservationErrorResult(
+        'AUTH_PENDING',
+        '图书馆登录已过期，请重新认证后再次确认预约。',
+      )
+    }
+
+    if (envelope.status === false || envelope.success === false) {
+      return reservationErrorResult(
+        'RESERVATION_REJECTED',
+        apiMessage(envelope, '图书馆未接受本次预约，请检查时间后重试。'),
+      )
+    }
+
+    const receipt = normalizeReservationReceipt(envelope.data, normalized)
+
+    return {
+      ok: true,
+      receipt,
+      fetchedAt: Date.now(),
+    }
+  } catch (error) {
+    if (error instanceof LibraryQueryError) {
+      if (error.code === 'AUTH_REQUIRED' && token) {
+        await rejectLibraryToken(token, storeId)
+        return reservationErrorResult(
+          'AUTH_PENDING',
+          '图书馆登录已过期，请重新认证后再次确认预约。',
+        )
+      }
+
+      if (freeBookStarted) {
+        return reservationErrorResult(
+          'RESULT_UNCERTAIN',
+          '无法确认预约是否成功，请先到图书馆系统核对预约记录。',
+        )
+      }
+
+      return reservationErrorResult(error.code, error.message)
+    }
+
+    return reservationErrorResult(
+      freeBookStarted ? 'RESULT_UNCERTAIN' : 'API_ERROR',
+      freeBookStarted
+        ? '无法确认预约是否成功，请先到图书馆系统核对预约记录。'
+        : '提交图书馆预约失败，请稍后重试。',
     )
   }
 }

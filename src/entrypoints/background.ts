@@ -7,7 +7,13 @@ import {
 } from '@/services/jwAuth'
 import { fetchSchedule } from '@/services/schedule'
 import { getLoginStatus, getUserInfo } from '@/services/user'
-import { fetchLibraryRooms } from '@/services/library'
+import {
+  fetchLibraryRooms,
+  fetchLibrarySeatEndTimes,
+  fetchLibrarySeatReservationDetails,
+  fetchLibrarySeats,
+  submitLibraryReservation,
+} from '@/services/library'
 import { observeLibraryToken } from '@/services/libraryAuth'
 
 function isJwSender(url?: string) {
@@ -76,6 +82,34 @@ export default defineBackground(() => {
     }
     if (message?.type === 'RUC_LIBRARY_ROOMS_QUERY') {
       return await fetchLibraryRooms(
+        message.params,
+        storeId,
+        sender.tab?.windowId,
+      )
+    }
+    if (message?.type === 'RUC_LIBRARY_SEATS_QUERY') {
+      return await fetchLibrarySeats(
+        message.params,
+        storeId,
+        sender.tab?.windowId,
+      )
+    }
+    if (message?.type === 'RUC_LIBRARY_SEAT_RESERVATION_OPTIONS_QUERY') {
+      return await fetchLibrarySeatReservationDetails(
+        message.params,
+        storeId,
+        sender.tab?.windowId,
+      )
+    }
+    if (message?.type === 'RUC_LIBRARY_SEAT_END_TIMES_QUERY') {
+      return await fetchLibrarySeatEndTimes(
+        message.params,
+        storeId,
+        sender.tab?.windowId,
+      )
+    }
+    if (message?.type === 'RUC_LIBRARY_RESERVATION_SUBMIT') {
+      return await submitLibraryReservation(
         message.params,
         storeId,
         sender.tab?.windowId,

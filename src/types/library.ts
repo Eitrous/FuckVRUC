@@ -81,3 +81,151 @@ export type LibraryRoomQueryResult =
       errorCode: LibraryQueryErrorCode
       fetchedAt: number
     }
+
+export type LibrarySeatStatus = 'FREE' | 'IN_USE' | 'AWAY' | 'UNKNOWN'
+
+export type LibrarySeat = {
+  id: string
+  label: string
+  name: string
+  status: LibrarySeatStatus
+  rawStatus: string
+  afterFree: boolean
+  raw: Record<string, unknown>
+}
+
+export type LibrarySeatQueryParams = {
+  roomId: string
+  date: string
+  beginMinute: number
+  endMinute: number
+}
+
+export type LibrarySeatList = {
+  items: LibrarySeat[]
+  totalCount: number
+  freeCount: number
+}
+
+export type LibrarySeatQueryResult =
+  | {
+      ok: true
+      list: LibrarySeatList
+      fetchedAt: number
+    }
+  | {
+      ok: false
+      error: string
+      errorCode: LibraryQueryErrorCode
+      fetchedAt: number
+    }
+
+export type LibraryTimelineMark = {
+  label: string
+  left: number
+}
+
+export type LibraryTimelineFreePeriod = {
+  label: string
+  left: number
+  width: number
+}
+
+export type LibraryReservationStartValue = 'now' | number
+
+export type LibraryTimeOption<
+  T extends LibraryReservationStartValue = number,
+> = {
+  value: T
+  label: string
+}
+
+export type LibrarySeatReservationDetailsQueryParams = {
+  seatId: string
+  date: string
+}
+
+export type LibrarySeatReservationDetails = {
+  timeline: {
+    marks: LibraryTimelineMark[]
+    freePeriods: LibraryTimelineFreePeriod[]
+  }
+  startTimes: LibraryTimeOption<LibraryReservationStartValue>[]
+}
+
+export type LibrarySeatReservationDetailsQueryResult =
+  | {
+      ok: true
+      details: LibrarySeatReservationDetails
+      fetchedAt: number
+    }
+  | {
+      ok: false
+      error: string
+      errorCode: LibraryQueryErrorCode
+      fetchedAt: number
+    }
+
+export type LibrarySeatEndTimesQueryParams = {
+  seatId: string
+  date: string
+  startTime: LibraryReservationStartValue
+}
+
+export type LibrarySeatEndTimesQueryResult =
+  | {
+      ok: true
+      options: LibraryTimeOption<number>[]
+      fetchedAt: number
+    }
+  | {
+      ok: false
+      error: string
+      errorCode: LibraryQueryErrorCode
+      fetchedAt: number
+    }
+
+export type LibraryReservationSubmitParams = {
+  seatId: string
+  date: string
+  startTime: LibraryReservationStartValue
+  endTime: number
+}
+
+export type LibraryReservationReceipt = {
+  id: string
+  receipt: string
+  roomId: string
+  seatId: string
+  seatLabel: string
+  date: string
+  beginMinute: number
+  endMinute: number
+  beginLabel: string
+  endLabel: string
+  status: string
+  buildingName: string
+  floorName: string
+  roomName: string
+  location: string
+  message: string
+}
+
+export type LibraryReservationErrorCode =
+  | LibraryQueryErrorCode
+  | 'CAPTCHA_REQUIRED'
+  | 'RESERVATION_REJECTED'
+  | 'RESULT_UNCERTAIN'
+
+export type LibraryReservationSubmitResult =
+  | {
+      ok: true
+      receipt: LibraryReservationReceipt
+      fetchedAt: number
+    }
+  | {
+      ok: false
+      error: string
+      errorCode: LibraryReservationErrorCode
+      fetchedAt: number
+    }

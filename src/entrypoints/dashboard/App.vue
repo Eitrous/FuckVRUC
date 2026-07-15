@@ -96,8 +96,34 @@ const {
   errorCode: libraryErrorCode,
   page: libraryPage,
   fetchedAt: libraryFetchedAt,
+  seatLoading: librarySeatLoading,
+  seatError: librarySeatError,
+  seatErrorCode: librarySeatErrorCode,
+  seatList: librarySeatList,
+  seatFetchedAt: librarySeatFetchedAt,
+  reservationDetailsLoading: libraryReservationDetailsLoading,
+  reservationDetailsError: libraryReservationDetailsError,
+  reservationDetailsErrorCode: libraryReservationDetailsErrorCode,
+  reservationDetails: libraryReservationDetails,
+  reservationDetailsFetchedAt: libraryReservationDetailsFetchedAt,
+  reservationEndTimesLoading: libraryReservationEndTimesLoading,
+  reservationEndTimesError: libraryReservationEndTimesError,
+  reservationEndTimesErrorCode: libraryReservationEndTimesErrorCode,
+  reservationEndTimes: libraryReservationEndTimes,
+  reservationEndTimesFetchedAt: libraryReservationEndTimesFetchedAt,
+  reservationSubmitting: libraryReservationSubmitting,
+  reservationError: libraryReservationError,
+  reservationErrorCode: libraryReservationErrorCode,
+  reservationReceipt: libraryReservationReceipt,
+  reservationFetchedAt: libraryReservationFetchedAt,
   queryLibraryRooms,
   clearLibraryRooms,
+  queryLibrarySeats,
+  clearLibrarySeats,
+  queryLibrarySeatReservationDetails,
+  queryLibrarySeatEndTimes,
+  submitLibraryReservation,
+  clearLibraryReservation,
 } = useLibraryRooms();
 
 const DEFAULT_SCHEDULE_SEMESTER = "2025-2026-2";
@@ -299,6 +325,26 @@ const activeViewProps = computed(() => {
       errorCode: libraryErrorCode.value,
       fetchedAt: libraryFetchedAt.value,
       page: libraryPage.value,
+      seatLoading: librarySeatLoading.value,
+      seatError: librarySeatError.value,
+      seatErrorCode: librarySeatErrorCode.value,
+      seatList: librarySeatList.value,
+      seatFetchedAt: librarySeatFetchedAt.value,
+      reservationDetailsLoading: libraryReservationDetailsLoading.value,
+      reservationDetailsError: libraryReservationDetailsError.value,
+      reservationDetailsErrorCode: libraryReservationDetailsErrorCode.value,
+      reservationDetails: libraryReservationDetails.value,
+      reservationDetailsFetchedAt: libraryReservationDetailsFetchedAt.value,
+      reservationEndTimesLoading: libraryReservationEndTimesLoading.value,
+      reservationEndTimesError: libraryReservationEndTimesError.value,
+      reservationEndTimesErrorCode: libraryReservationEndTimesErrorCode.value,
+      reservationEndTimes: libraryReservationEndTimes.value,
+      reservationEndTimesFetchedAt: libraryReservationEndTimesFetchedAt.value,
+      reservationSubmitting: libraryReservationSubmitting.value,
+      reservationError: libraryReservationError.value,
+      reservationErrorCode: libraryReservationErrorCode.value,
+      reservationReceipt: libraryReservationReceipt.value,
+      reservationFetchedAt: libraryReservationFetchedAt.value,
     };
   }
 
@@ -313,6 +359,19 @@ const activeViewProps = computed(() => {
 });
 
 function selectView(viewId: DashboardViewId) {
+  if (
+    activeView.value === "library" &&
+    viewId !== "library" &&
+    libraryReservationSubmitting.value
+  ) {
+    showDashboardMessage(
+      "预约正在提交，请等待结果确认后再离开。",
+      "warning",
+      5000,
+    );
+    return;
+  }
+
   if (activeView.value === "library" && viewId !== "library") {
     clearLibraryRooms();
   }
@@ -725,6 +784,12 @@ onUnmounted(() => {
         @query-grades="queryGrades"
         @query-rooms="queryLibraryRooms"
         @clear-results="clearLibraryRooms"
+        @query-seats="queryLibrarySeats"
+        @clear-seats="clearLibrarySeats"
+        @query-reservation-details="queryLibrarySeatReservationDetails"
+        @query-reservation-end-times="queryLibrarySeatEndTimes"
+        @submit-reservation="submitLibraryReservation"
+        @clear-reservation="clearLibraryReservation"
       />
     </div>
   </main>

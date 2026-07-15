@@ -180,839 +180,153 @@
       "status" : "FREE",
       "afterFree" : true
     },
-    "1878401493306019844" : {
-      "id" : "1878401493306019844",
-      "label" : "s112",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019846" : {
-      "id" : "1878401493306019846",
-      "label" : "s108",
-      "name" : "3行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019847" : {
-      "id" : "1878401493306019847",
-      "label" : "s104",
-      "name" : "5行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019848" : {
-      "id" : "1878401493306019848",
-      "label" : "s111",
-      "name" : "1行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019849" : {
-      "id" : "1878401493306019849",
-      "label" : "s099",
-      "name" : "7行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019850" : {
-      "id" : "1878401493306019850",
-      "label" : "s092",
-      "name" : "11行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019852" : {
-      "id" : "1878401493306019852",
-      "label" : "s095",
-      "name" : "9行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019853" : {
-      "id" : "1878401493306019853",
-      "label" : "s100",
-      "name" : "7行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019854" : {
-      "id" : "1878401493306019854",
-      "label" : "s090",
-      "name" : "12行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019855" : {
-      "id" : "1878401493306019855",
-      "label" : "s097",
-      "name" : "8行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019856" : {
-      "id" : "1878401493306019856",
-      "label" : "s106",
-      "name" : "4行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019857" : {
-      "id" : "1878401493306019857",
-      "label" : "s105",
-      "name" : "4行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019858" : {
-      "id" : "1878401493306019858",
-      "label" : "s101",
-      "name" : "6行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019859" : {
-      "id" : "1878401493306019859",
-      "label" : "s110",
-      "name" : "2行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019860" : {
-      "id" : "1878401493306019860",
-      "label" : "s109",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019861" : {
-      "id" : "1878401493306019861",
-      "label" : "s093",
-      "name" : "10行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019862" : {
-      "id" : "1878401493306019862",
-      "label" : "s098",
-      "name" : "8行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019863" : {
-      "id" : "1878401493306019863",
-      "label" : "s094",
-      "name" : "10行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019864" : {
-      "id" : "1878401493306019864",
-      "label" : "s089",
-      "name" : "12行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019867" : {
-      "id" : "1878401493306019867",
-      "label" : "s102",
-      "name" : "6行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019868" : {
-      "id" : "1878401493306019868",
-      "label" : "CD-S1",
-      "name" : "3行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019869" : {
-      "id" : "1878401493306019869",
-      "label" : "CD-S3",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019870" : {
-      "id" : "1878401493306019870",
-      "label" : "CD-S2",
-      "name" : "2行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019871" : {
-      "id" : "1878401493306019871",
-      "label" : "L-S7",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019872" : {
-      "id" : "1878401493306019872",
-      "label" : "L-S5",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019875" : {
-      "id" : "1878401493306019875",
-      "label" : "L-S4",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019876" : {
-      "id" : "1878401493306019876",
-      "label" : "L-S1",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019877" : {
-      "id" : "1878401493306019877",
-      "label" : "s005",
-      "name" : "1行1列",
-      "status" : "AWAY",
-      "afterFree" : false
-    },
-    "1878401493306019878" : {
-      "id" : "1878401493306019878",
-      "label" : "L-S2",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019881" : {
-      "id" : "1878401493306019881",
-      "label" : "s003",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019882" : {
-      "id" : "1878401493306019882",
-      "label" : "s002",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019883" : {
-      "id" : "1878401493306019883",
-      "label" : "s001",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019884" : {
-      "id" : "1878401493306019884",
-      "label" : "s006",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019886" : {
-      "id" : "1878401493306019886",
-      "label" : "s004",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019887" : {
-      "id" : "1878401493306019887",
-      "label" : "s023",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019888" : {
-      "id" : "1878401493306019888",
-      "label" : "s024",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019889" : {
-      "id" : "1878401493306019889",
-      "label" : "s022",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019890" : {
-      "id" : "1878401493306019890",
-      "label" : "s021",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019891" : {
-      "id" : "1878401493306019891",
-      "label" : "s020",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019892" : {
-      "id" : "1878401493306019892",
-      "label" : "s019",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019893" : {
-      "id" : "1878401493306019893",
-      "label" : "s017",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019894" : {
-      "id" : "1878401493306019894",
-      "label" : "s015",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019895" : {
-      "id" : "1878401493306019895",
-      "label" : "s014",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019896" : {
-      "id" : "1878401493306019896",
-      "label" : "s013",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019897" : {
-      "id" : "1878401493306019897",
-      "label" : "s018",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019898" : {
-      "id" : "1878401493306019898",
-      "label" : "s016",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019899" : {
-      "id" : "1878401493306019899",
-      "label" : "s011",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019900" : {
-      "id" : "1878401493306019900",
-      "label" : "s009",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019901" : {
-      "id" : "1878401493306019901",
-      "label" : "s008",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019902" : {
-      "id" : "1878401493306019902",
-      "label" : "s007",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878401493306019903" : {
-      "id" : "1878401493306019903",
-      "label" : "s012",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878401493306019904" : {
-      "id" : "1878401493306019904",
-      "label" : "s010",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976448" : {
-      "id" : "1878413518383976448",
-      "label" : "s035",
-      "name" : "3行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976449" : {
-      "id" : "1878413518383976449",
-      "label" : "s036",
-      "name" : "4行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976450" : {
-      "id" : "1878413518383976450",
-      "label" : "s037",
-      "name" : "5行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976451" : {
-      "id" : "1878413518383976451",
-      "label" : "s040",
-      "name" : "14行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976452" : {
-      "id" : "1878413518383976452",
-      "label" : "s039",
-      "name" : "14行2列",
-      "status" : "AWAY",
-      "afterFree" : false
-    },
-    "1878413518383976453" : {
-      "id" : "1878413518383976453",
-      "label" : "s038",
-      "name" : "14行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976454" : {
-      "id" : "1878413518383976454",
-      "label" : "s034",
-      "name" : "5行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976455" : {
-      "id" : "1878413518383976455",
-      "label" : "s033",
-      "name" : "1行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976456" : {
-      "id" : "1878413518383976456",
-      "label" : "L-S3",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976457" : {
-      "id" : "1878413518383976457",
-      "label" : "s025",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976458" : {
-      "id" : "1878413518383976458",
-      "label" : "s026",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976459" : {
-      "id" : "1878413518383976459",
-      "label" : "s027",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976460" : {
-      "id" : "1878413518383976460",
-      "label" : "s028",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976461" : {
-      "id" : "1878413518383976461",
-      "label" : "s029",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976462" : {
-      "id" : "1878413518383976462",
-      "label" : "s030",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976463" : {
-      "id" : "1878413518383976463",
-      "label" : "s031",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976464" : {
-      "id" : "1878413518383976464",
-      "label" : "s032",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976465" : {
-      "id" : "1878413518383976465",
-      "label" : "s057",
-      "name" : "3行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976466" : {
-      "id" : "1878413518383976466",
-      "label" : "s058",
-      "name" : "4行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976467" : {
-      "id" : "1878413518383976467",
-      "label" : "s059",
-      "name" : "5行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976468" : {
-      "id" : "1878413518383976468",
-      "label" : "s062",
-      "name" : "14行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976469" : {
-      "id" : "1878413518383976469",
-      "label" : "s061",
-      "name" : "14行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976470" : {
-      "id" : "1878413518383976470",
-      "label" : "s060",
-      "name" : "14行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976471" : {
-      "id" : "1878413518383976471",
-      "label" : "s056",
-      "name" : "5行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976472" : {
-      "id" : "1878413518383976472",
-      "label" : "s055",
-      "name" : "1行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976473" : {
-      "id" : "1878413518383976473",
-      "label" : "s047",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976474" : {
-      "id" : "1878413518383976474",
-      "label" : "s048",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976475" : {
-      "id" : "1878413518383976475",
-      "label" : "s049",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976476" : {
-      "id" : "1878413518383976476",
-      "label" : "s050",
-      "name" : "2行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976477" : {
-      "id" : "1878413518383976477",
-      "label" : "s051",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976478" : {
-      "id" : "1878413518383976478",
-      "label" : "s052",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976479" : {
-      "id" : "1878413518383976479",
-      "label" : "s053",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976480" : {
-      "id" : "1878413518383976480",
-      "label" : "s054",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976481" : {
-      "id" : "1878413518383976481",
-      "label" : "s043",
-      "name" : "3行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976482" : {
-      "id" : "1878413518383976482",
-      "label" : "s044",
-      "name" : "3行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976483" : {
-      "id" : "1878413518383976483",
-      "label" : "s046",
-      "name" : "4行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976484" : {
-      "id" : "1878413518383976484",
-      "label" : "s041",
-      "name" : "4行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976485" : {
-      "id" : "1878413518383976485",
-      "label" : "s042",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976486" : {
-      "id" : "1878413518383976486",
-      "label" : "s045",
-      "name" : "4行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976487" : {
-      "id" : "1878413518383976487",
-      "label" : "s065",
-      "name" : "3行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976488" : {
-      "id" : "1878413518383976488",
-      "label" : "s066",
-      "name" : "3行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976489" : {
-      "id" : "1878413518383976489",
-      "label" : "s068",
-      "name" : "4行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976490" : {
-      "id" : "1878413518383976490",
-      "label" : "s063",
-      "name" : "4行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976491" : {
-      "id" : "1878413518383976491",
-      "label" : "s064",
-      "name" : "2行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976492" : {
-      "id" : "1878413518383976492",
-      "label" : "s067",
-      "name" : "4行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976493" : {
-      "id" : "1878413518383976493",
-      "label" : "s069",
-      "name" : "2行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976494" : {
-      "id" : "1878413518383976494",
-      "label" : "s070",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976495" : {
-      "id" : "1878413518383976495",
-      "label" : "s071",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976496" : {
-      "id" : "1878413518383976496",
-      "label" : "s072",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976497" : {
-      "id" : "1878413518383976497",
-      "label" : "s073",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976498" : {
-      "id" : "1878413518383976498",
-      "label" : "626",
-      "name" : "2行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976499" : {
-      "id" : "1878413518383976499",
-      "label" : "s075",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976500" : {
-      "id" : "1878413518383976500",
-      "label" : "s076",
-      "name" : "2行2列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976501" : {
-      "id" : "1878413518383976501",
-      "label" : "s077",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976502" : {
-      "id" : "1878413518383976502",
-      "label" : "s078",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976503" : {
-      "id" : "1878413518383976503",
-      "label" : "s080",
-      "name" : "2行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976504" : {
-      "id" : "1878413518383976504",
-      "label" : "s081",
-      "name" : "2行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976505" : {
-      "id" : "1878413518383976505",
-      "label" : "s082",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976506" : {
-      "id" : "1878413518383976506",
-      "label" : "s083",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976507" : {
-      "id" : "1878413518383976507",
-      "label" : "s079",
-      "name" : "2行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976508" : {
-      "id" : "1878413518383976508",
-      "label" : "s085",
-      "name" : "2行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976509" : {
-      "id" : "1878413518383976509",
-      "label" : "s086",
-      "name" : "2行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976510" : {
-      "id" : "1878413518383976510",
-      "label" : "s087",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878413518383976511" : {
-      "id" : "1878413518383976511",
-      "label" : "s088",
-      "name" : "1行1列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878413518383976512" : {
-      "id" : "1878413518383976512",
-      "label" : "s084",
-      "name" : "2行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    },
-    "1878683053817171968" : {
-      "id" : "1878683053817171968",
-      "label" : "s074",
-      "name" : "2行2列",
-      "status" : "IN_USE",
-      "afterFree" : false
-    },
-    "1878685758748987392" : {
-      "id" : "1878685758748987392",
-      "label" : "L-S6",
-      "name" : "1行1列",
-      "status" : "FREE",
-      "afterFree" : true
-    }
+    ...
+  }
+}
+```
+
+### 查询座位详情
+
+#### 获取时间线
+`https://zwlib.ruc.edu.cn/jsq/static/frontApi/res/getTimeLine/<SeatID>/<Date>`
+- `SeatID`: 座位ID
+
+##### Payload
+```json
+{}
+```
+
+##### Response
+示例
+```json
+{
+  "status" : true,
+  "code" : 200,
+  "message" : "操作成功",
+  "data" : {
+    "markList" : [ {
+      "label" : "07:00",
+      "left" : 0.0,
+      "width" : ""
+    }, {
+      "label" : "12:00",
+      "left" : 33.33,
+      "width" : ""
+    }, {
+      "label" : "18:00",
+      "left" : 73.33,
+      "width" : ""
+    }, {
+      "label" : "22:00",
+      "left" : 100.0,
+      "width" : ""
+    } ],
+    "freeList" : [ {
+      "label" : "20:50-22:00",
+      "left" : 92.22,
+      "width" : 7.78
+    } ]
+  }
+}
+```
+- `data.markList`: 用于前端显示，无关紧要
+- `freeList`: 空闲时段列表
+
+#### 获取可选开始时间列表
+`https://zwlib.ruc.edu.cn/jsq/static/frontApi/res/getStartTimes/<SeatID>/<Date>`
+
+##### Payload
+```json
+{}
+```
+
+##### Response
+示例
+```json
+{
+  "status" : true,
+  "code" : 200,
+  "message" : "操作成功",
+  "data" : [ [ "now", "现在" ], [ "1260", "21:00" ] ]
+}
+```
+- `data`: 可选开始时间列表
+
+#### 获取可选结束时间列表
+进入预约界面以及选择了开始时间后都会调用一次
+`https://zwlib.ruc.edu.cn/jsq/static/frontApi/res/getEndTimes/<SeatID>/<Date>/<Time>`
+- `Time`: 当前时间，单位为分钟，例如 1250 -> 20:50
+
+##### Payload
+```json
+{}
+```
+
+##### Response
+示例
+```json
+{
+  "status" : true,
+  "code" : 200,
+  "message" : "操作成功",
+  "data" : [ [ "1260", "21:00" ], [ "1320", "22:00" ] ]
+}
+```
+
+#### 提交预约
+`https://zwlib.ruc.edu.cn/jsq/static/frontApi/make/freeBook/<SeatID>/<Date>/<StartTime>/<EndTime>?capToken=capToken`
+
+##### Payload
+```json
+{}
+```
+
+##### Response
+示例
+```json
+{
+  "status" : true,
+  "code" : 200,
+  "message" : "操作成功",
+  "data" : {
+    "ctId" : "",
+    "id" : ,
+    "roomId" : ,
+    "seatId" : ,
+    "seatLabel" : ,
+    "oneself" : false,
+    "username" : "<学号>",
+    "fullName" : "<姓名>",
+    "receipt" : "<凭证>",
+    "makeDate" : ,
+    "makeBegin" : ,
+    "makeEnd" : ,
+    "actualBegin" : "",
+    "actualEnd" : -1,
+    "awayTime" : "",
+    "resTime" : "",
+    "useMinute" : 0,
+    "kwhRate" : "",
+    "status" : "RESERVE",
+    "isSign" : 1,
+    "remark" : "",
+    "makeDateStr" : "<Date>",
+    "makeBeginStr" : ,
+    "makeEndStr" : ,
+    "actualStr" : "",
+    "awayRange" : "",
+    "buildName" : ,
+    "floorName" : ,
+    "roomName" : ,
+    "location" : ,
+    "buildNameE" : ,
+    "floorNameE" : ,
+    "roomNameE" : ,
+    "locationE" : ,
+    "message" : "请在  至  之间完成签到",
+    "linkId" : "0",
+    "showCheckBtn" : false,
+    "awayTimeM" : 0
   }
 }
 ```

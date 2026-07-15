@@ -526,17 +526,17 @@ function deleteCustomService(service: PortalService) {
 
 .service-icon {
   display: inline-flex;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border);
+  border: none;
   color: var(--red);
 }
 
 .service-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 42px;
+  height: 42px;
 }
 
 .service-body {
@@ -594,7 +594,7 @@ function deleteCustomService(service: PortalService) {
 
 .service-manage-button {
   border: 0;
-  background: var(--bg);
+  background: transparent;
   color: var(--red);
   padding: 6px 9px;
   cursor: pointer;

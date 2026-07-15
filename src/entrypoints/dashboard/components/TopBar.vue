@@ -78,7 +78,7 @@ function selectView(viewId: DashboardViewId) {
         >
           <line x1="6" y1="0" x2="6" y2="30" />
         </svg>
-        <div class="top-bar-title">Dashboard</div>
+        <div class="top-bar-title">仪表盘</div>
       </div>
       <nav class="top-toolbar" aria-label="Dashboard views">
         <button

@@ -20,7 +20,8 @@ export default defineConfig({
     host_permissions: [
         "https://v.ruc.edu.cn/*",
         "https://my.ruc.edu.cn/*",
-        "https://jw.ruc.edu.cn/*"
+        "https://jw.ruc.edu.cn/*",
+        "https://zwlib.ruc.edu.cn/*"
     ],
     action: {
         default_popup: "popup.html",

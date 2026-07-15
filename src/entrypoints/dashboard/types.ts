@@ -4,7 +4,7 @@ export type DashboardIcon = {
   body: string;
 };
 
-export type DashboardViewId = "services" | "schedule" | "grades";
+export type DashboardViewId = "services" | "schedule" | "grades" | "library";
 
 export type ToolbarItem = {
   id: DashboardViewId;

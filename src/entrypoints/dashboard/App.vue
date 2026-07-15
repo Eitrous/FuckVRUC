@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import GradesView from "./components/GradesView.vue";
+import LibraryReservationView from "./components/LibraryReservationView.vue";
 import ScheduleView from "./components/ScheduleView.vue";
 import ServicesView from "./components/ServicesView.vue";
 import TopBar from "./components/TopBar.vue";
@@ -16,6 +17,7 @@ import type {
 import { builtinServices, resolveMailUrl } from "@/services/services-index";
 import type { CustomPortalServiceInput, PortalService } from "@/types/service";
 import { useGrades } from "@/composables/useGrades";
+import { useLibraryRooms } from "@/composables/useLibraryRooms";
 import { useSchedules } from "@/composables/useSchedules";
 import { useUserInfo } from "@/composables/useUserInfo";
 import DashboardMessage  from "./components/DashboardMessage.vue";
@@ -88,6 +90,16 @@ const {
   querySchedules,
 } = useSchedules();
 
+const {
+  loading: libraryLoading,
+  error: libraryError,
+  errorCode: libraryErrorCode,
+  page: libraryPage,
+  fetchedAt: libraryFetchedAt,
+  queryLibraryRooms,
+  clearLibraryRooms,
+} = useLibraryRooms();
+
 const DEFAULT_SCHEDULE_SEMESTER = "2025-2026-2";
 const DEFAULT_SCHEDULE_WEEK = 1;
 const SELECTED_SCHEDULE_SEMESTER_STORAGE_KEY = "rucScheduleSelectedSemester";
@@ -146,12 +158,14 @@ const toolbarItems: ToolbarItem[] = [
   { id: "services", label: "服务入口" },
   { id: "schedule", label: "课表查询" },
   { id: "grades", label: "成绩查询" },
+  { id: "library", label: "座位查询" },
 ];
 
 const viewComponentMap = {
   services: ServicesView,
   schedule: ScheduleView,
   grades: GradesView,
+  library: LibraryReservationView,
 };
 
 function icon(body: string): DashboardIcon {
@@ -277,6 +291,17 @@ const activeViewProps = computed(() => {
     };
   }
 
+  if (activeView.value === "library") {
+    return {
+      icon: icons.book,
+      loading: libraryLoading.value,
+      error: libraryError.value,
+      errorCode: libraryErrorCode.value,
+      fetchedAt: libraryFetchedAt.value,
+      page: libraryPage.value,
+    };
+  }
+
   return {
     icon: icons.exam,
     loading: loading.value,
@@ -288,6 +313,10 @@ const activeViewProps = computed(() => {
 });
 
 function selectView(viewId: DashboardViewId) {
+  if (activeView.value === "library" && viewId !== "library") {
+    clearLibraryRooms();
+  }
+
   activeView.value = viewId;
 
   if (viewId === "schedule" && schedules.value.length === 0) {
@@ -632,6 +661,15 @@ watch(
   },
 );
 
+watch(
+  libraryError,
+  (message) => {
+    if (message) {
+      showDashboardMessage("图书馆余座查询失败，请检查登录状态或网络连接", "warning", 5000);
+    }
+  },
+);
+
 onMounted(() => {
   void syncUserInfo(true);
   void restoreCustomServices();
@@ -685,6 +723,8 @@ onUnmounted(() => {
         @update:week="selectScheduleWeek"
         @query-schedules="queryCurrentSemesterSchedule"
         @query-grades="queryGrades"
+        @query-rooms="queryLibraryRooms"
+        @clear-results="clearLibraryRooms"
       />
     </div>
   </main>

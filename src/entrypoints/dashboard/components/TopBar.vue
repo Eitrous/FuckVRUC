@@ -277,8 +277,8 @@ function selectView(viewId: DashboardViewId) {
   align-items: center;
   justify-content: flex-end;
   overflow-x: auto;
-  padding: 0px auto;
-  margin: 0px 48px;
+  padding: 0;
+  margin: 0 48px;
 }
 
 .toolbar-item {
@@ -389,10 +389,22 @@ function selectView(viewId: DashboardViewId) {
     align-items: flex-start;
     flex-direction: column;
     padding: 12px 16px;
+    gap: 12px;
   }
 
   .top-toolbar {
+    box-sizing: border-box;
+    width: calc(100% + 32px);
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    gap: 8px;
+    margin: 0 -16px;
     padding: 0 16px 12px;
+    overscroll-behavior-inline: contain;
+  }
+
+  .toolbar-item {
+    flex: 0 0 auto;
   }
 }
 </style>

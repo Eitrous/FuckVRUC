@@ -7,12 +7,24 @@ import {
 } from '@/services/jwAuth'
 import { fetchSchedule } from '@/services/schedule'
 import { getLoginStatus, getUserInfo } from '@/services/user'
+import { fetchLibraryRooms } from '@/services/library'
+import { observeLibraryToken } from '@/services/libraryAuth'
 
 function isJwSender(url?: string) {
   if (!url) return false
 
   try {
     return new URL(url).origin === 'https://jw.ruc.edu.cn'
+  } catch {
+    return false
+  }
+}
+
+function isLibrarySender(url?: string) {
+  if (!url) return false
+
+  try {
+    return new URL(url).origin === 'https://zwlib.ruc.edu.cn'
   } catch {
     return false
   }
@@ -37,6 +49,17 @@ export default defineBackground(() => {
       return await observeJwToken(message.token, storeId)
     }
 
+    if (message?.type === 'RUC_LIBRARY_TOKEN_OBSERVED') {
+      const senderUrl = sender.url ?? sender.tab?.url
+
+      if (!isLibrarySender(senderUrl)) {
+        return false
+      }
+
+      const storeId = await getCookieStoreIdForTab(sender.tab?.id)
+      return await observeLibraryToken(message.token, storeId)
+    }
+
     const storeId = await getCookieStoreIdForTab(sender.tab?.id)
 
     if (message?.type === 'RUC_LOGIN_STATUS_QUERY') {
@@ -50,6 +73,13 @@ export default defineBackground(() => {
     }
     if (message?.type === 'RUC_SCHEDULE_QUERY') {
       return await fetchSchedule(message.semester, storeId)
+    }
+    if (message?.type === 'RUC_LIBRARY_ROOMS_QUERY') {
+      return await fetchLibraryRooms(
+        message.params,
+        storeId,
+        sender.tab?.windowId,
+      )
     }
     if (message?.type === 'RUC_DASHBOARD_OPEN') {
       return browser.tabs.create({

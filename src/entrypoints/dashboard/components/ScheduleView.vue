@@ -648,7 +648,7 @@ function updateWeek(event: Event) {
   min-width: 0;
   flex: 1 1 auto;
   border-left: 3px solid var(--red);
-  background: var(--bg);
+  background: color-mix(in srgb, var(--red) 10%, var(--bg));
   padding: 8px 9px;
 }
 

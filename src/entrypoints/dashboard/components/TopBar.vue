@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import { nextTick, ref } from "vue";
+
 import logo from "@/assets/logo.png";
 import type { UserPanelStatus } from "@/composables/useUserInfo";
 import type { UserInfo } from "@/types/user";
 import { Icon } from "@iconify/vue";
-import type { DashboardViewId, ToolbarItem } from "../types";
+import type {
+  DashboardViewId,
+  LibraryDashboardSection,
+  ToolbarItem,
+} from "../types";
 
 const props = withDefaults(
   defineProps<{
     activeView: DashboardViewId;
+    activeLibrarySection: LibraryDashboardSection;
+    libraryNavigationDisabled?: boolean;
     toolbarItems: ToolbarItem[];
     userInfo?: UserInfo | null;
     userError?: string;
@@ -17,12 +25,17 @@ const props = withDefaults(
     userInfo: null,
     userError: undefined,
     userStatus: "checking",
+    libraryNavigationDisabled: false,
   },
 );
 
 const emit = defineEmits<{
   (event: "login"): void;
   (event: "select-view", viewId: DashboardViewId): void;
+  (
+    event: "select-library-section",
+    section: LibraryDashboardSection,
+  ): void;
   (event: "retry-user-info"): void;
 }>();
 
@@ -50,12 +63,94 @@ const icons = {
   ),
 };
 
+const libraryButton = ref<HTMLButtonElement | null>(null);
+const libraryDropdown = ref<HTMLElement | null>(null);
+const firstLibrarySectionButton = ref<HTMLButtonElement | null>(null);
+const libraryMenuOpen = ref(false);
+const libraryDropdownStyle = ref({
+  top: "0px",
+  left: "0px",
+});
+
 function requestLogin() {
   emit("login");
 }
 
 function selectView(viewId: DashboardViewId) {
   emit("select-view", viewId);
+}
+
+function openLibraryMenu(focusFirst = false) {
+  libraryMenuOpen.value = true;
+  void nextTick(() => {
+    updateLibraryDropdownPosition();
+    if (focusFirst) firstLibrarySectionButton.value?.focus();
+  });
+}
+
+function setLibraryButton(element: unknown) {
+  libraryButton.value = element instanceof HTMLButtonElement ? element : null;
+}
+
+function setLibraryDropdown(element: unknown) {
+  libraryDropdown.value = element instanceof HTMLElement ? element : null;
+}
+
+function updateLibraryDropdownPosition() {
+  const button = libraryButton.value;
+  const dropdown = libraryDropdown.value;
+  if (!button || !dropdown) return;
+
+  const buttonRect = button.getBoundingClientRect();
+  const viewportMargin = 10;
+  const dropdownWidth = dropdown.offsetWidth;
+  const left = Math.min(
+    Math.max(viewportMargin, buttonRect.left),
+    Math.max(viewportMargin, window.innerWidth - dropdownWidth - viewportMargin),
+  );
+
+  libraryDropdownStyle.value = {
+    top: `${buttonRect.bottom}px`,
+    left: `${left}px`,
+  };
+}
+
+function closeLibraryMenu() {
+  libraryMenuOpen.value = false;
+}
+
+function selectLibrarySection(section: LibraryDashboardSection) {
+  if (props.libraryNavigationDisabled) return;
+
+  libraryMenuOpen.value = false;
+  emit("select-library-section", section);
+}
+
+function handleLibraryButtonKeydown(event: KeyboardEvent) {
+  if (event.key !== "ArrowDown") return;
+
+  event.preventDefault();
+  openLibraryMenu(true);
+}
+
+function handleSubmenuEscape() {
+  libraryButton.value?.focus();
+  closeLibraryMenu();
+}
+
+function handleLibraryGroupFocusOut(event: FocusEvent) {
+  const group = event.currentTarget;
+  const nextTarget = event.relatedTarget;
+
+  if (
+    group instanceof HTMLElement &&
+    nextTarget instanceof Node &&
+    group.contains(nextTarget)
+  ) {
+    return;
+  }
+
+  closeLibraryMenu();
 }
 </script>
 
@@ -81,17 +176,91 @@ function selectView(viewId: DashboardViewId) {
         <div class="top-bar-title">仪表盘</div>
       </div>
       <nav class="top-toolbar" aria-label="Dashboard views">
-        <button
+        <template
           v-for="item in props.toolbarItems"
           :key="item.id"
-          class="toolbar-item"
-          :class="{ 'is-active': item.id === props.activeView }"
-          type="button"
-          :aria-current="item.id === props.activeView ? 'page' : undefined"
-          @click="selectView(item.id)"
         >
-          {{ item.label }}
-        </button>
+          <button
+            v-if="item.id !== 'library'"
+            class="toolbar-item"
+            :class="{ 'is-active': item.id === props.activeView }"
+            type="button"
+            :aria-current="item.id === props.activeView ? 'page' : undefined"
+            @click="selectView(item.id)"
+          >
+            {{ item.label }}
+          </button>
+          <div
+            v-else
+            class="library-toolbar-group"
+            @mouseenter="openLibraryMenu()"
+            @mouseleave="closeLibraryMenu"
+            @focusin="openLibraryMenu()"
+            @focusout="handleLibraryGroupFocusOut"
+          >
+            <button
+              :ref="setLibraryButton"
+              class="toolbar-item library-toolbar-item"
+              :class="{ 'is-active': item.id === props.activeView }"
+              type="button"
+              aria-haspopup="true"
+              aria-controls="library-secondary-navigation"
+              :aria-expanded="libraryMenuOpen"
+              :aria-current="item.id === props.activeView ? 'page' : undefined"
+              @keydown="handleLibraryButtonKeydown"
+            >
+              {{ item.label }}
+
+            </button>
+
+            <nav
+              v-if="libraryMenuOpen"
+              id="library-secondary-navigation"
+              :ref="setLibraryDropdown"
+              class="library-dropdown-overlay"
+              :style="libraryDropdownStyle"
+              aria-label="座位查询"
+              @keydown.esc.stop.prevent="handleSubmenuEscape"
+            >
+            <div class="library-dropdown" role="menu">
+              <button
+                ref="firstLibrarySectionButton"
+                type="button"
+                :class="{ active: props.activeView === 'library' && props.activeLibrarySection === 'search' }"
+                :aria-current="
+                  props.activeView === 'library' && props.activeLibrarySection === 'search'
+                    ? 'page'
+                    : undefined
+                "
+                :disabled="props.libraryNavigationDisabled"
+                @click="selectLibrarySection('search')"
+              >
+                座位预约
+              </button>
+              <button
+                type="button"
+                :class="{ active: props.activeView === 'library' && props.activeLibrarySection === 'records' }"
+                :aria-current="
+                  props.activeView === 'library' && props.activeLibrarySection === 'records'
+                    ? 'page'
+                    : undefined
+                "
+                :disabled="props.libraryNavigationDisabled"
+                @click="selectLibrarySection('records')"
+              >
+                预约记录
+              </button>
+              <span
+                v-if="props.libraryNavigationDisabled"
+                class="submenu-status"
+                role="status"
+              >
+                预约提交期间暂不能切换
+              </span>
+              </div>
+            </nav>
+          </div>
+        </template>
       </nav>
       <div class="top-bar-right">
         <div class="user-info-field">
@@ -200,6 +369,7 @@ function selectView(viewId: DashboardViewId) {
         </div>
       </div>
     </div>
+
   </header>
 </template>
 
@@ -294,6 +464,18 @@ function selectView(viewId: DashboardViewId) {
   transition: all 0.08s ease;
 }
 
+.library-toolbar-group {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.library-toolbar-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
 .toolbar-item:hover,
 .toolbar-item.is-active {
   border-bottom: 2px solid var(--red);
@@ -302,6 +484,72 @@ function selectView(viewId: DashboardViewId) {
 .toolbar-item:focus-visible {
   outline: 2px solid var(--red);
   outline-offset: 2px;
+}
+
+.library-dropdown-overlay {
+  position: fixed;
+  z-index: 20;
+  border: none;
+  background: transparent;
+}
+
+.library-dropdown {
+  display: grid;
+  margin-top: 13px;
+  width: 80px;
+  border: 1px solid var(--border);
+  border-top: none;
+}
+
+.library-dropdown button {
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 34%, var(--bg));
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.library-dropdown button:last-of-type {
+  border-bottom: 0;
+}
+
+.library-dropdown button:hover:not(:disabled):not(.active) {
+  background: color-mix(in srgb, var(--red) 9%, var(--bg));
+}
+
+.library-dropdown button.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.library-dropdown button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--red-dark);
+  outline-offset: -3px;
+}
+
+.library-dropdown button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.submenu-status {
+  display: block;
+  max-width: 190px;
+  padding: 8px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--muted) 34%, var(--bg));
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .login-button {
@@ -406,5 +654,6 @@ function selectView(viewId: DashboardViewId) {
   .toolbar-item {
     flex: 0 0 auto;
   }
+
 }
 </style>

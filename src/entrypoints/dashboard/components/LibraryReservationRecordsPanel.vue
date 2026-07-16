@@ -21,10 +21,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (
-    event: "query-records",
-    params: LibraryReservationRecordsQueryParams,
-  ): void;
+  (event: "query-records", params: LibraryReservationRecordsQueryParams): void;
   (event: "clear-records"): void;
 }>();
 
@@ -74,7 +71,9 @@ const activeCategoryInfo = computed(() => {
 });
 
 const records = computed(() => props.page?.items ?? []);
-const currentPage = computed(() => props.page?.currentPage ?? requestedPage.value);
+const currentPage = computed(
+  () => props.page?.currentPage ?? requestedPage.value,
+);
 const totalPages = computed(() => Math.max(1, props.page?.totalPage ?? 1));
 
 const errorTitle = computed(() => {
@@ -191,11 +190,7 @@ onUnmounted(() => {
     :aria-busy="loading"
   >
     <div class="records-toolbar">
-      <div
-        class="records-categories"
-        role="tablist"
-        aria-label="预约记录分类"
-      >
+      <div class="records-categories" role="tablist" aria-label="预约记录分类">
         <button
           v-for="category in categories"
           :id="`records-tab-${category.id}`"
@@ -214,23 +209,65 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <button
-        class="refresh-button"
-        type="button"
-        :disabled="loading"
-        @click="queryRecords(currentPage)"
-      >
-        {{ loading ? "查询中…" : "刷新" }}
-      </button>
-    </div>
+      <div>
+        <!-- <p v-if="!page">
+          共 {{ page.totalCount }} 条
+          <span v-if="fetchedAtLabel"> · 更新于 {{ fetchedAtLabel }}</span>
+        </p> -->
 
-    <div class="records-summary" aria-live="polite">
-      <h2 id="library-records-heading">{{ activeCategoryInfo.label }}</h2>
-      <p v-if="page">
-        共 {{ page.totalCount }} 条
-        <span v-if="fetchedAtLabel"> · 更新于 {{ fetchedAtLabel }}</span>
-      </p>
-      <p v-else>记录仅在本次页面中显示，不会保存在本地。</p>
+        <button
+          class="refresh-button"
+          type="button"
+          :disabled="loading"
+          @click="queryRecords(currentPage)"
+        >
+          {{ loading ? "" : "刷新" }}
+          <svg
+            v-if="loading"
+            xmlns="http://www.w3.org/2000/svg"
+            width="1.2em"
+            height="1.2em"
+            viewBox="0 0 24 24"
+          >
+            <path d="M0 0h24v24H0z" fill="none" />
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            >
+              <path stroke-dasharray="18" d="M12 3c4.97 0 9 4.03 9 9">
+                <animate
+                  fill="freeze"
+                  attributeName="stroke-dashoffset"
+                  dur="0.3s"
+                  values="18;0"
+                />
+                <animateTransform
+                  attributeName="transform"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                  type="rotate"
+                  values="0 12 12;360 12 12"
+                />
+              </path>
+              <path
+                stroke-dasharray="60"
+                d="M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9Z"
+                opacity=".3"
+              >
+                <animate
+                  fill="freeze"
+                  attributeName="stroke-dashoffset"
+                  dur="1.2s"
+                  values="60;0"
+                />
+              </path>
+            </g>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div
@@ -256,11 +293,19 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-else-if="error || errorCode" class="records-state error-state" role="alert">
+      <div
+        v-else-if="error || errorCode"
+        class="records-state error-state"
+        role="alert"
+      >
         <p class="state-kicker">查询未完成</p>
         <h3>{{ errorTitle }}</h3>
         <p>{{ error || "请稍后重试。" }}</p>
-        <button class="state-action" type="button" @click="queryRecords(currentPage)">
+        <button
+          class="state-action"
+          type="button"
+          @click="queryRecords(currentPage)"
+        >
           重新查询
         </button>
       </div>
@@ -269,7 +314,11 @@ onUnmounted(() => {
         <p class="state-kicker">{{ activeCategoryInfo.label }}</p>
         <h3>{{ activeCategoryInfo.emptyTitle }}</h3>
         <p>{{ activeCategoryInfo.emptyDescription }}</p>
-        <button class="state-action secondary" type="button" @click="queryRecords(1)">
+        <button
+          class="state-action secondary"
+          type="button"
+          @click="queryRecords(1)"
+        >
           刷新记录
         </button>
       </div>
@@ -332,7 +381,11 @@ onUnmounted(() => {
     </div>
 
     <nav
-      v-if="activeCategory !== 'today' && page && (page.totalCount > 0 || page.currentPage > 1)"
+      v-if="
+        activeCategory !== 'today' &&
+        page &&
+        (page.totalCount > 0 || page.currentPage > 1)
+      "
       class="records-pagination"
       aria-label="预约记录分页"
     >
@@ -371,10 +424,6 @@ onUnmounted(() => {
   gap: 16px;
 }
 
-.records-toolbar {
-  border-bottom: 1px solid var(--border);
-}
-
 .records-categories {
   display: flex;
   min-width: 0;
@@ -383,10 +432,9 @@ onUnmounted(() => {
 }
 
 .category-button,
-.refresh-button,
 .state-action,
 .records-pagination button {
-  border: 1px solid var(--border);
+  border: none;
   background: var(--bg);
   color: var(--text);
   cursor: pointer;
@@ -396,21 +444,22 @@ onUnmounted(() => {
   flex: 0 0 auto;
   min-height: 42px;
   padding: 9px 18px;
-  border-bottom: 0;
-  border-right: 0;
   font-weight: 700;
+  font-size: 14px;
 }
 
-.category-button:last-child {
-  border-right: 1px solid var(--border);
+.category-button:hover:not(.active) {
+  color: var(--muted);
+}
+
+.category-button:hover {
+  background: var(--bg);
 }
 
 .category-button.active {
-  background: var(--accent);
-  color: var(--bg);
+  color: var(--red);
 }
 
-.refresh-button,
 .state-action,
 .records-pagination button {
   min-height: 38px;
@@ -418,11 +467,21 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--red) 9%, var(--bg));
+.refresh-button {
+  background: var(--red);
+  color: var(--bg);
+  border: none;
+  cursor: pointer;
+  min-height: 36px;
+  min-width: 60px;
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.category-button.active:hover:not(:disabled) {
+.refresh-button:hover {
   background: var(--red-dark);
 }
 
@@ -655,8 +714,12 @@ button:disabled {
 }
 
 @keyframes skeleton-pulse {
-  from { opacity: 0.46; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.46;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 920px) {

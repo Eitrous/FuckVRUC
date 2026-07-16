@@ -33,7 +33,7 @@ import {
   type LibrarySeatStatus,
   type LibraryTimeOption,
 } from "@/types/library";
-import type { DashboardIcon } from "../types";
+import type { DashboardIcon, LibraryDashboardSection } from "../types";
 import LibraryReservationRecordsPanel from "./LibraryReservationRecordsPanel.vue";
 
 const DEFAULT_BUILDING_ID = "1875080631899230208" as LibraryBuildingId;
@@ -41,6 +41,7 @@ const PAGE_SIZE = 20;
 
 const props = defineProps<{
   icon: DashboardIcon;
+  section: LibraryDashboardSection;
   loading: boolean;
   error?: string;
   errorCode?: LibraryQueryErrorCode;
@@ -114,7 +115,6 @@ const filters = reactive({
   windows: false,
 });
 const validationError = ref("");
-const activeLibrarySection = ref<"search" | "records">("search");
 const lastSubmittedParams = ref<LibraryRoomQueryParams | null>(null);
 const isSeatModalOpen = ref(false);
 const selectedRoom = ref<LibraryRoom | null>(null);
@@ -207,8 +207,8 @@ const currentReservationSelectionKey = computed(() => {
 const hasCurrentReservationError = computed(() => {
   return Boolean(
     (props.reservationError || props.reservationErrorCode) &&
-      reservationAttemptKey &&
-      reservationAttemptKey === currentReservationSelectionKey.value,
+    reservationAttemptKey &&
+    reservationAttemptKey === currentReservationSelectionKey.value,
   );
 });
 const isReservationResultUncertain = computed(() => {
@@ -522,9 +522,7 @@ function validateFilters() {
     return "查询日期不能早于今天。";
   }
 
-  const startMinute = filters.startTime
-    ? parseTime(filters.startTime)
-    : null;
+  const startMinute = filters.startTime ? parseTime(filters.startTime) : null;
   const endMinute = filters.endTime ? parseTime(filters.endTime) : null;
 
   if (filters.startTime && startMinute === null) {
@@ -539,11 +537,7 @@ function validateFilters() {
     return "请选择有效的结束时间。";
   }
 
-  if (
-    startMinute !== null &&
-    endMinute !== null &&
-    endMinute <= startMinute
-  ) {
+  if (startMinute !== null && endMinute !== null && endMinute <= startMinute) {
     return "结束时间必须晚于开始时间。";
   }
 
@@ -745,21 +739,6 @@ function closeSeatModal() {
   });
 }
 
-function selectLibrarySection(section: "search" | "records") {
-  if (
-    section === activeLibrarySection.value ||
-    props.reservationSubmitting
-  ) {
-    return;
-  }
-
-  if (section === "records" && isSeatModalOpen.value) {
-    closeSeatModal();
-  }
-
-  activeLibrarySection.value = section;
-}
-
 function retrySeatQuery() {
   if (props.seatLoading || !selectedSeatParams.value) return;
 
@@ -922,10 +901,7 @@ function updateReservationEnd(event: Event) {
 }
 
 function retryReservationEndTimes() {
-  if (
-    selectedStartTime.value === null ||
-    props.reservationEndTimesLoading
-  ) {
+  if (selectedStartTime.value === null || props.reservationEndTimesLoading) {
     return;
   }
 
@@ -990,8 +966,11 @@ function modalFocusableElements() {
     '[tabindex]:not([tabindex="-1"])',
   ].join(",");
 
-  return Array.from(seatModal.value.querySelectorAll<HTMLElement>(selector)).filter(
-    (element) => !element.hasAttribute("hidden") && element.offsetParent !== null,
+  return Array.from(
+    seatModal.value.querySelectorAll<HTMLElement>(selector),
+  ).filter(
+    (element) =>
+      !element.hasAttribute("hidden") && element.offsetParent !== null,
   );
 }
 
@@ -1105,10 +1084,7 @@ watch(
 );
 
 watch(
-  () => [
-    props.reservationEndTimesError,
-    props.reservationEndTimesErrorCode,
-  ],
+  () => [props.reservationEndTimesError, props.reservationEndTimesErrorCode],
   ([error, errorCode]) => {
     if (
       (error || errorCode) &&
@@ -1133,15 +1109,20 @@ watch(
 watch(
   () => props.seatLoading,
   (loading) => {
-    if (
-      loading ||
-      reservationStage.value !== "seats" ||
-      !pendingSeatFocusId
-    ) {
+    if (loading || reservationStage.value !== "seats" || !pendingSeatFocusId) {
       return;
     }
 
     focusReturnedSeat(pendingSeatFocusId);
+  },
+);
+
+watch(
+  () => props.section,
+  (section) => {
+    if (section === "records" && isSeatModalOpen.value) {
+      closeSeatModal();
+    }
   },
 );
 
@@ -1160,9 +1141,7 @@ onUnmounted(() => {
   <article
     class="data-panel"
     :aria-busy="
-      activeLibrarySection === 'search'
-        ? props.loading
-        : props.recordsLoading
+      props.section === 'search' ? props.loading : props.recordsLoading
     "
   >
     <header class="panel-header">
@@ -1170,11 +1149,11 @@ onUnmounted(() => {
         <Icon :icon="props.icon" aria-hidden="true" />
         <div>
           <h2>
-            {{ activeLibrarySection === "search" ? "图书馆余座" : "预约记录" }}
+            {{ props.section === "search" ? "图书馆座位预约" : "预约记录" }}
           </h2>
-          <p
+          <!-- <p
             v-if="
-              activeLibrarySection === 'search'
+              props.section === 'search'
                 ? props.fetchedAt
                 : props.recordsFetchedAt
             "
@@ -1182,138 +1161,114 @@ onUnmounted(() => {
           >
             更新时间：{{
               formatDateTime(
-                activeLibrarySection === "search"
+                props.section === "search"
                   ? props.fetchedAt!
                   : props.recordsFetchedAt!,
               )
             }}
-          </p>
+          </p> -->
         </div>
       </div>
     </header>
 
-    <nav class="library-section-nav" aria-label="图书馆功能分栏">
-      <button
-        type="button"
-        :class="{ active: activeLibrarySection === 'search' }"
-        :aria-pressed="activeLibrarySection === 'search'"
-        :disabled="props.reservationSubmitting"
-        @click="selectLibrarySection('search')"
+    <template v-if="props.section === 'search'">
+      <form
+        class="filter-panel"
+        aria-label="余座查询条件"
+        novalidate
+        @submit.prevent="queryRooms"
       >
-        余座查询
-      </button>
-      <button
-        type="button"
-        :class="{ active: activeLibrarySection === 'records' }"
-        :aria-pressed="activeLibrarySection === 'records'"
-        :disabled="props.reservationSubmitting"
-        @click="selectLibrarySection('records')"
-      >
-        预约记录
-      </button>
-      <span v-if="props.reservationSubmitting" role="status">
-        预约提交期间暂不能切换
-      </span>
-    </nav>
-
-    <template v-if="activeLibrarySection === 'search'">
-
-    <form
-      class="filter-panel"
-      aria-label="余座查询条件"
-      novalidate
-      @submit.prevent="queryRooms"
-    >
-      <div class="filter-grid">
-        <label class="filter-field">
-          <span>馆舍</span>
-          <select
-            :value="filters.buildingId"
-            :disabled="props.loading"
-            @change="updateBuilding"
-          >
-            <option
-              v-for="building in LIBRARY_BUILDINGS"
-              :key="building.id"
-              :value="building.id"
+        <div class="filter-grid">
+          <label class="filter-field">
+            <span>馆舍</span>
+            <select
+              :value="filters.buildingId"
+              :disabled="props.loading"
+              @change="updateBuilding"
             >
-              {{ building.name }}
-            </option>
-          </select>
-        </label>
+              <option
+                v-for="building in LIBRARY_BUILDINGS"
+                :key="building.id"
+                :value="building.id"
+              >
+                {{ building.name }}
+              </option>
+            </select>
+          </label>
 
-        <label class="filter-field">
-          <span>日期</span>
-          <input
-            :value="filters.date"
-            :min="minimumDate"
-            :disabled="props.loading"
-            type="date"
-            required
-            @change="updateDate"
-          />
-        </label>
-
-        <label class="filter-field">
-          <span>楼层</span>
-          <select
-            :value="filters.floorId"
-            :disabled="props.loading"
-            @change="updateFloor"
-          >
-            <option
-              v-for="floor in currentBuilding.floors"
-              :key="floor.id"
-              :value="floor.id"
+          <label class="filter-field">
+            <span>楼层</span>
+            <select
+              :value="filters.floorId"
+              :disabled="props.loading"
+              @change="updateFloor"
             >
-              {{ floor.name }}
-            </option>
-          </select>
-        </label>
+              <option
+                v-for="floor in currentBuilding.floors"
+                :key="floor.id"
+                :value="floor.id"
+              >
+                {{ floor.name }}
+              </option>
+            </select>
+          </label>
 
-        <label class="filter-field">
-          <span>开始时间（可选）</span>
-          <input
-            :value="filters.startTime"
-            :disabled="props.loading"
-            type="time"
-            @change="updateStartTime"
-          />
-        </label>
+          <fieldset class="facility-field">
+            <legend>设施</legend>
+            <div class="facility-options">
+              <label class="check-field">
+                <input
+                  :checked="filters.power"
+                  :disabled="props.loading"
+                  type="checkbox"
+                  @change="updatePower"
+                />
+                <span>有电源</span>
+              </label>
+              <label class="check-field">
+                <input
+                  :checked="filters.windows"
+                  :disabled="props.loading"
+                  type="checkbox"
+                  @change="updateWindows"
+                />
+                <span>靠窗</span>
+              </label>
+            </div>
+          </fieldset>
 
-        <label class="filter-field">
-          <span>结束时间（可选）</span>
-          <input
-            :value="filters.endTime"
-            :disabled="props.loading"
-            type="time"
-            @change="updateEndTime"
-          />
-        </label>
+          <label class="filter-field">
+            <span>日期</span>
+            <input
+              :value="filters.date"
+              :min="minimumDate"
+              :disabled="props.loading"
+              type="date"
+              required
+              @change="updateDate"
+            />
+          </label>
 
-        <fieldset class="facility-field">
-          <legend>设施</legend>
-          <div class="facility-options">
-            <label class="check-field">
-              <input
-                :checked="filters.power"
-                :disabled="props.loading"
-                type="checkbox"
-                @change="updatePower"
-              />
-              <span>有电源</span>
-            </label>
-            <label class="check-field">
-              <input
-                :checked="filters.windows"
-                :disabled="props.loading"
-                type="checkbox"
-                @change="updateWindows"
-              />
-              <span>靠窗</span>
-            </label>
-          </div>
-        </fieldset>
+          <label class="filter-field">
+            <span>开始时间（可选）</span>
+            <input
+              :value="filters.startTime"
+              :disabled="props.loading"
+              type="time"
+              @change="updateStartTime"
+            />
+          </label>
+
+          <label class="filter-field">
+            <span>结束时间（可选）</span>
+            <input
+              :value="filters.endTime"
+              :disabled="props.loading"
+              type="time"
+              @change="updateEndTime"
+            />
+          </label>
+        </div>
 
         <div class="query-action">
           <button
@@ -1322,664 +1277,735 @@ onUnmounted(() => {
             :disabled="props.loading"
           >
             {{ props.loading ? "正在查询" : "查询余座" }}
+            <svg
+              v-if="props.loading"
+              xmlns="http://www.w3.org/2000/svg"
+              width="1.2em"
+              height="1.2em"
+              viewBox="0 0 24 24"
+            >
+              <path d="M0 0h24v24H0z" fill="none" />
+              <g
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              >
+                <path stroke-dasharray="18" d="M12 3c4.97 0 9 4.03 9 9">
+                  <animate
+                    fill="freeze"
+                    attributeName="stroke-dashoffset"
+                    dur="0.3s"
+                    values="18;0"
+                  />
+                  <animateTransform
+                    attributeName="transform"
+                    dur="1.5s"
+                    repeatCount="indefinite"
+                    type="rotate"
+                    values="0 12 12;360 12 12"
+                  />
+                </path>
+                <path
+                  stroke-dasharray="60"
+                  d="M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9Z"
+                  opacity=".3"
+                >
+                  <animate
+                    fill="freeze"
+                    attributeName="stroke-dashoffset"
+                    dur="1.2s"
+                    values="60;0"
+                  />
+                </path>
+              </g>
+            </svg>
           </button>
         </div>
-      </div>
 
-      <p
-        v-if="validationError"
-        id="library-filter-error"
-        class="validation-error"
-        role="alert"
-      >
-        {{ validationError }}
-      </p>
-    </form>
-
-    <section class="results-section" aria-live="polite">
-      <div
-        v-if="props.loading"
-        class="room-grid"
-        aria-label="正在连接图书馆并查询余座"
-      >
-        <article
-          v-for="index in 6"
-          :key="index"
-          class="room-card skeleton-card"
-          aria-hidden="true"
+        <p
+          v-if="validationError"
+          id="library-filter-error"
+          class="validation-error"
+          role="alert"
         >
-          <span class="skeleton-line is-title"></span>
-          <span class="skeleton-line"></span>
-          <span class="skeleton-line is-number"></span>
-        </article>
-      </div>
+          {{ validationError }}
+        </p>
+      </form>
 
-      <div v-else-if="hasError" class="state-panel error-state" role="alert">
-        <h3>{{ errorTitle }}</h3>
-        <p>{{ errorDetail }}</p>
-      </div>
-
-      <template v-else-if="props.page && rooms.length">
-        <div class="results-summary">
-          <span>共 {{ props.page.totalCount }} 个区域</span>
-          <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+      <section class="results-section" aria-live="polite">
+        <div
+          v-if="props.loading"
+          class="room-grid"
+          aria-label="正在连接图书馆并查询余座"
+        >
+          <article
+            v-for="index in 6"
+            :key="index"
+            class="room-card skeleton-card"
+            aria-hidden="true"
+          >
+            <span class="skeleton-line is-title"></span>
+            <span class="skeleton-line"></span>
+            <span class="skeleton-line is-number"></span>
+          </article>
         </div>
 
-        <div class="room-grid">
-          <button
-            v-for="room in rooms"
-            :key="room.id"
-            class="room-card room-card-button"
-            type="button"
-            aria-haspopup="dialog"
-            :aria-label="`${room.name}，${room.buildingName}，${room.floorName}，空闲 ${room.seatFree} 个，共 ${room.seatTotal} 个座位，查看座位详情`"
-            @click="openSeatModal(room, $event)"
-          >
-            <span class="room-card-header">
-              <span class="room-title-group">
-                <span class="room-card-title">{{ room.name }}</span>
-                <span class="room-card-location">
-                  {{ room.buildingName }}，{{ room.floorName }}
+        <div v-else-if="hasError" class="state-panel error-state" role="alert">
+          <h3>{{ errorTitle }}</h3>
+          <p>{{ errorDetail }}</p>
+        </div>
+
+        <template v-else-if="props.page && rooms.length">
+          <div class="results-summary">
+            <span>共 {{ props.page.totalCount }} 个区域</span>
+            <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+          </div>
+
+          <div class="room-grid">
+            <button
+              v-for="room in rooms"
+              :key="room.id"
+              class="room-card room-card-button"
+              type="button"
+              aria-haspopup="dialog"
+              :aria-label="`${room.name}，${room.buildingName}，${room.floorName}，空闲 ${room.seatFree} 个，共 ${room.seatTotal} 个座位，查看座位详情`"
+              @click="openSeatModal(room, $event)"
+            >
+              <span class="room-card-header">
+                <span class="room-title-group">
+                  <span class="room-card-title">{{ room.name }}</span>
+                  <span class="room-card-location">
+                    {{ room.buildingName }}，{{ room.floorName }}
+                  </span>
+                </span>
+                <span
+                  class="availability-label"
+                  :class="{ 'is-empty': room.seatFree <= 0 }"
+                >
+                  {{ availabilityLabel(room) }}
                 </span>
               </span>
-              <span
-                class="availability-label"
-                :class="{ 'is-empty': room.seatFree <= 0 }"
-              >
-                {{ availabilityLabel(room) }}
-              </span>
-            </span>
 
-            <span class="seat-counts" aria-label="座位数量">
-              <span class="free-count">
-                <strong>{{ formatCount(room.seatFree) }}</strong>
-                <span class="count-label">空闲座位</span>
+              <span class="seat-counts" aria-label="座位数量">
+                <span class="free-count">
+                  <strong>{{ formatCount(room.seatFree) }}</strong>
+                  <span class="count-label">空闲座位</span>
+                </span>
+                <span class="total-count">
+                  <strong>{{ formatCount(room.seatTotal) }}</strong>
+                  <span class="count-label">总座位</span>
+                </span>
               </span>
-              <span class="total-count">
-                <strong>{{ formatCount(room.seatTotal) }}</strong>
-                <span class="count-label">总座位</span>
-              </span>
-            </span>
-          </button>
+            </button>
+          </div>
+
+          <nav
+            v-if="totalPages > 1"
+            class="pagination"
+            aria-label="余座查询分页"
+          >
+            <button
+              class="page-button"
+              type="button"
+              :disabled="!canGoPrevious"
+              @click="queryPage(currentPage - 1)"
+            >
+              上一页
+            </button>
+            <span aria-current="page"
+              >{{ currentPage }} / {{ totalPages }}</span
+            >
+            <button
+              class="page-button"
+              type="button"
+              :disabled="!canGoNext"
+              @click="queryPage(currentPage + 1)"
+            >
+              下一页
+            </button>
+          </nav>
+        </template>
+
+        <div v-else-if="props.page" class="state-panel empty-state">
+          <h3>没有符合条件的区域</h3>
+          <p>请调整楼层、时间或设施条件后重新查询。</p>
         </div>
 
-        <nav v-if="totalPages > 1" class="pagination" aria-label="余座查询分页">
-          <button
-            class="page-button"
-            type="button"
-            :disabled="!canGoPrevious"
-            @click="queryPage(currentPage - 1)"
-          >
-            上一页
-          </button>
-          <span aria-current="page">{{ currentPage }} / {{ totalPages }}</span>
-          <button
-            class="page-button"
-            type="button"
-            :disabled="!canGoNext"
-            @click="queryPage(currentPage + 1)"
-          >
-            下一页
-          </button>
-        </nav>
-      </template>
-
-      <div v-else-if="props.page" class="state-panel empty-state">
-        <h3>没有符合条件的区域</h3>
-        <p>请调整楼层、时间或设施条件后重新查询。</p>
-      </div>
-
-      <div v-else class="state-panel initial-state">
-        <h3>查询馆内余座</h3>
-        <p>选择馆舍和日期，可按楼层、时间及设施进一步筛选。</p>
-      </div>
-    </section>
-
-    <div
-      v-if="isSeatModalOpen && selectedRoom"
-      class="seat-modal-backdrop"
-      @click.self="closeSeatModal"
-    >
-      <section
-        ref="seatModal"
-        class="seat-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="seat-modal-title"
-        aria-describedby="seat-modal-context"
-        tabindex="-1"
-      >
-        <header class="seat-modal-header">
-          <div>
-            <span class="seat-modal-eyebrow">
-              {{
-                reservationStage === "seats"
-                  ? "区域座位"
-                  : reservationStage === "booking"
-                    ? "座位预约"
-                    : "预约回执"
-              }}
-            </span>
-            <h3 v-if="reservationStage === 'seats'" id="seat-modal-title">
-              {{ selectedRoom.name }}
-            </h3>
-            <h3
-              v-else-if="reservationStage === 'booking'"
-              id="seat-modal-title"
-              ref="bookingHeading"
-              tabindex="-1"
-            >
-              {{ selectedSeat?.label }} 座位预约
-            </h3>
-            <h3
-              v-else
-              id="seat-modal-title"
-              ref="successHeading"
-              tabindex="-1"
-            >
-              预约成功
-            </h3>
-            <p id="seat-modal-context">
-              {{ reservationLocation }} · {{ selectedSeatParams?.date }}
-              <template v-if="reservationStage === 'seats'">
-                · {{ formatSeatQueryTime(selectedSeatParams) }}
-              </template>
-            </p>
-            <p
-              v-if="reservationStage === 'seats' && props.seatFetchedAt"
-              class="seat-modal-timestamp"
-            >
-              更新时间：{{ formatDateTime(props.seatFetchedAt) }}
-            </p>
-            <p
-              v-else-if="
-                reservationStage === 'booking' &&
-                props.reservationDetailsFetchedAt
-              "
-              class="seat-modal-timestamp"
-            >
-              可预约时间更新于：{{
-                formatDateTime(props.reservationDetailsFetchedAt)
-              }}
-            </p>
-          </div>
-          <div class="seat-modal-actions">
-            <button
-              v-if="reservationStage === 'booking'"
-              class="seat-modal-back"
-              type="button"
-              :disabled="props.reservationSubmitting"
-              @click="returnToSeatList({ refresh: false })"
-            >
-              返回座位
-            </button>
-            <button
-              ref="seatModalCloseButton"
-              class="seat-modal-close"
-              type="button"
-              aria-label="关闭座位详情"
-              :disabled="props.reservationSubmitting"
-              @click="closeSeatModal"
-            >
-              关闭
-            </button>
-          </div>
-        </header>
-
-        <div
-          class="seat-modal-body"
-          :aria-busy="
-            props.seatLoading ||
-            props.reservationDetailsLoading ||
-            props.reservationEndTimesLoading ||
-            props.reservationSubmitting
-          "
-        >
-          <template v-if="reservationStage === 'seats'">
-            <div
-              v-if="props.seatList"
-              class="seat-summary"
-              role="status"
-              aria-live="polite"
-            >
-              <span>共 {{ formatCount(props.seatList.totalCount) }} 个座位</span>
-              <span>
-                空闲 {{ formatCount(props.seatList.freeCount) }} 个
-              </span>
-            </div>
-
-            <div
-              v-if="
-                props.seatLoading ||
-                (!props.seatList && !props.seatError && !props.seatErrorCode)
-              "
-              class="seat-grid seat-skeleton-grid"
-              aria-label="正在查询区域座位"
-              role="status"
-              aria-live="polite"
-            >
-              <div
-                v-for="index in 12"
-                :key="index"
-                class="seat-item seat-skeleton-item"
-                aria-hidden="true"
-              >
-                <span class="seat-skeleton-line is-label"></span>
-                <span class="seat-skeleton-line"></span>
-              </div>
-            </div>
-
-            <div
-              v-else-if="props.seatError || props.seatErrorCode"
-              class="seat-state seat-error-state"
-              role="alert"
-            >
-              <h4>{{ seatErrorTitle }}</h4>
-              <p>{{ seatErrorDetail }}</p>
-              <button
-                class="seat-retry-button"
-                type="button"
-                :disabled="props.seatLoading"
-                @click="retrySeatQuery"
-              >
-                重新加载
-              </button>
-            </div>
-
-            <ul v-else-if="props.seatList && seats.length" class="seat-grid">
-              <li v-for="seat in seats" :key="seat.id">
-                <button
-                  class="seat-item seat-item-button"
-                  :class="seatStatusClass(seat.status)"
-                  :data-seat-id="seat.id"
-                  type="button"
-                  :aria-label="`${seat.label}，${seat.name || '位置未标注'}，${seatStatusLabel(seat.status)}，查看可预约时间`"
-                  @click="openSeatBooking(seat, $event)"
-                >
-                  <span class="seat-item-header">
-                    <strong>{{ seat.label }}</strong>
-                    <span class="seat-status">
-                      {{ seatStatusLabel(seat.status) }}
-                    </span>
-                  </span>
-                  <span class="seat-item-name">
-                    {{ seat.name || "位置未标注" }}
-                  </span>
-                  <span v-if="seat.status === 'UNKNOWN'" class="raw-status">
-                    原始状态：{{ seat.rawStatus }}
-                  </span>
-                </button>
-              </li>
-            </ul>
-
-            <div
-              v-else-if="props.seatList"
-              class="seat-state"
-              role="status"
-              aria-live="polite"
-            >
-              <h4>该区域没有座位数据</h4>
-              <p>图书馆当前未返回该区域的座位列表。</p>
-            </div>
-          </template>
-
-          <template v-else-if="reservationStage === 'booking' && selectedSeat">
-            <div
-              v-if="isReservationResultUncertain"
-              class="seat-state reservation-uncertain-state"
-              role="alert"
-            >
-              <span class="reservation-state-code">RESULT_UNCERTAIN</span>
-              <h4>{{ reservationErrorTitle }}</h4>
-              <p>{{ reservationErrorDetail }}</p>
-              <p>此状态下不会再次提交当前预约。</p>
-            </div>
-
-            <div
-              v-else-if="
-                props.reservationDetailsLoading ||
-                (!props.reservationDetails &&
-                  !props.reservationDetailsError &&
-                  !props.reservationDetailsErrorCode)
-              "
-              class="booking-skeleton"
-              role="status"
-              aria-live="polite"
-              aria-label="正在查询可预约时间"
-            >
-              <span class="booking-skeleton-line is-wide"></span>
-              <span class="booking-skeleton-line"></span>
-              <span class="booking-skeleton-timeline"></span>
-              <span class="booking-skeleton-line is-short"></span>
-            </div>
-
-            <div
-              v-else-if="
-                props.reservationDetailsError ||
-                props.reservationDetailsErrorCode
-              "
-              class="seat-state seat-error-state"
-              role="alert"
-            >
-              <h4>{{ reservationDetailsErrorTitle }}</h4>
-              <p>{{ reservationDetailsErrorDetail }}</p>
-              <button
-                class="seat-retry-button"
-                type="button"
-                :disabled="props.reservationDetailsLoading"
-                @click="retryReservationDetails"
-              >
-                重新加载
-              </button>
-            </div>
-
-            <div v-else-if="props.reservationDetails" class="booking-panel">
-              <section class="booking-seat-summary" aria-label="当前座位">
-                <div>
-                  <span>座位</span>
-                  <strong>{{ selectedSeat.label }}</strong>
-                </div>
-                <div>
-                  <span>位置</span>
-                  <strong>{{ selectedSeat.name || "位置未标注" }}</strong>
-                </div>
-                <div>
-                  <span>当前状态</span>
-                  <strong>{{ seatStatusLabel(selectedSeat.status) }}</strong>
-                </div>
-              </section>
-
-              <section class="timeline-section" aria-labelledby="timeline-title">
-                <div class="booking-section-heading">
-                  <div>
-                    <span>当日占用情况</span>
-                    <h4 id="timeline-title">座位时间线</h4>
-                  </div>
-                  <p>红色时段可预约</p>
-                </div>
-
-                <div
-                  v-if="
-                    props.reservationDetails.timeline.marks.length ||
-                    props.reservationDetails.timeline.freePeriods.length
-                  "
-                  class="seat-timeline"
-                  aria-hidden="true"
-                >
-                  <div class="seat-timeline-track">
-                    <span
-                      v-for="(period, index) in
-                        props.reservationDetails.timeline.freePeriods"
-                      :key="`${period.label}-${index}`"
-                      class="seat-timeline-free"
-                      :style="{
-                        left: timelineLeft(period.left),
-                        width: timelineWidth(period.left, period.width),
-                      }"
-                    ></span>
-                  </div>
-                  <span
-                    v-for="(mark, index) in
-                      props.reservationDetails.timeline.marks"
-                    :key="`${mark.label}-${index}`"
-                    class="seat-timeline-mark"
-                    :style="{ left: timelineLeft(mark.left) }"
-                  >
-                    <i></i>
-                    <small>{{ mark.label }}</small>
-                  </span>
-                </div>
-
-                <div class="free-periods" aria-label="可预约时段">
-                  <span class="free-periods-label">可预约时段</span>
-                  <ul
-                    v-if="props.reservationDetails.timeline.freePeriods.length"
-                  >
-                    <li
-                      v-for="(period, index) in
-                        props.reservationDetails.timeline.freePeriods"
-                      :key="`${period.label}-text-${index}`"
-                    >
-                      {{ period.label }}
-                    </li>
-                  </ul>
-                  <p v-else>图书馆未返回可预约时段。</p>
-                </div>
-              </section>
-
-              <form class="reservation-form" @submit.prevent="submitReservation">
-                <div class="reservation-time-grid">
-                  <label class="reservation-field">
-                    <span>开始时间</span>
-                    <select
-                      :value="
-                        selectedStartTime === null
-                          ? ''
-                          : encodeStartValue(selectedStartTime)
-                      "
-                      :disabled="
-                        props.reservationSubmitting ||
-                        !props.reservationDetails.startTimes.length
-                      "
-                      @change="updateReservationStart"
-                    >
-                      <option value="">请选择开始时间</option>
-                      <option
-                        v-for="option in props.reservationDetails.startTimes"
-                        :key="encodeStartValue(option.value)"
-                        :value="encodeStartValue(option.value)"
-                      >
-                        {{ option.label }}
-                      </option>
-                    </select>
-                  </label>
-
-                  <label class="reservation-field">
-                    <span>结束时间</span>
-                    <select
-                      :value="selectedEndTime === null ? '' : String(selectedEndTime)"
-                      :disabled="
-                        props.reservationSubmitting ||
-                        selectedStartTime === null ||
-                        props.reservationEndTimesLoading ||
-                        !props.reservationEndTimes?.length
-                      "
-                      @change="updateReservationEnd"
-                    >
-                      <option value="">
-                        {{
-                          selectedStartTime === null
-                            ? "请先选择开始时间"
-                            : props.reservationEndTimesLoading
-                              ? "正在读取结束时间"
-                              : "请选择结束时间"
-                        }}
-                      </option>
-                      <option
-                        v-for="option in props.reservationEndTimes ?? []"
-                        :key="option.value"
-                        :value="String(option.value)"
-                      >
-                        {{ option.label }}
-                      </option>
-                    </select>
-                  </label>
-                </div>
-
-                <p
-                  v-if="!props.reservationDetails.startTimes.length"
-                  class="reservation-form-hint"
-                  role="status"
-                >
-                  该座位当前没有可选的预约开始时间。
-                </p>
-
-                <div
-                  v-if="props.reservationEndTimesLoading"
-                  class="reservation-inline-state"
-                  role="status"
-                  aria-live="polite"
-                >
-                  正在读取结束时间…
-                </div>
-
-                <div
-                  v-else-if="
-                    selectedStartTime !== null &&
-                    (props.reservationEndTimesError ||
-                      props.reservationEndTimesErrorCode)
-                  "
-                  class="reservation-inline-error"
-                  role="alert"
-                >
-                  <div>
-                    <strong>{{ reservationEndTimesErrorTitle }}</strong>
-                    <p>{{ reservationEndTimesErrorDetail }}</p>
-                  </div>
-                  <button
-                    class="seat-retry-button"
-                    type="button"
-                    :disabled="props.reservationEndTimesLoading"
-                    @click="retryReservationEndTimes"
-                  >
-                    重试
-                  </button>
-                </div>
-
-                <section
-                  v-if="selectedStartOption && selectedEndOption"
-                  class="reservation-summary"
-                  aria-labelledby="reservation-summary-title"
-                >
-                  <span>提交前核对</span>
-                  <h4 id="reservation-summary-title">预约摘要</h4>
-                  <dl>
-                    <div>
-                      <dt>地点</dt>
-                      <dd>{{ reservationLocation }}</dd>
-                    </div>
-                    <div>
-                      <dt>座位</dt>
-                      <dd>{{ selectedSeat.label }}</dd>
-                    </div>
-                    <div>
-                      <dt>日期</dt>
-                      <dd>{{ selectedSeatParams?.date }}</dd>
-                    </div>
-                    <div>
-                      <dt>时间</dt>
-                      <dd>
-                        {{ selectedStartOption.label }}–{{
-                          selectedEndOption.label
-                        }}
-                      </dd>
-                    </div>
-                  </dl>
-                </section>
-
-                <div
-                  v-if="hasCurrentReservationError"
-                  class="reservation-submit-error"
-                  role="alert"
-                >
-                  <strong>{{ reservationErrorTitle }}</strong>
-                  <p>{{ reservationErrorDetail }}</p>
-                </div>
-
-                <div
-                  v-if="props.reservationSubmitting"
-                  class="reservation-submitting"
-                  role="status"
-                  aria-live="assertive"
-                >
-                  正在提交预约，请保持此窗口开启，不要重复操作。
-                </div>
-
-                <button
-                  class="reservation-submit-button"
-                  type="submit"
-                  :disabled="!canSubmitReservation"
-                >
-                  {{
-                    props.reservationSubmitting
-                      ? "正在提交预约"
-                      : hasCurrentReservationError
-                        ? "重新确认预约"
-                        : "确认预约"
-                  }}
-                </button>
-              </form>
-            </div>
-          </template>
-
-          <section
-            v-else-if="reservationStage === 'success' && props.reservationReceipt"
-            class="reservation-success"
-            aria-labelledby="reservation-success-title"
-          >
-            <div class="reservation-success-mark" aria-hidden="true">✓</div>
-            <span>图书馆已接受本次预约</span>
-            <h4 id="reservation-success-title">
-              {{ props.reservationReceipt.seatLabel }} 预约成功
-            </h4>
-
-            <dl>
-              <div>
-                <dt>回执</dt>
-                <dd>{{ props.reservationReceipt.receipt || "—" }}</dd>
-              </div>
-              <div>
-                <dt>地点</dt>
-                <dd>{{ receiptLocation(props.reservationReceipt) }}</dd>
-              </div>
-              <div>
-                <dt>日期</dt>
-                <dd>{{ props.reservationReceipt.date }}</dd>
-              </div>
-              <div>
-                <dt>时间</dt>
-                <dd>
-                  {{ props.reservationReceipt.beginLabel }}–{{
-                    props.reservationReceipt.endLabel
-                  }}
-                </dd>
-              </div>
-              <div>
-                <dt>状态</dt>
-                <dd>{{ props.reservationReceipt.status }}</dd>
-              </div>
-            </dl>
-
-            <p v-if="props.reservationReceipt.message" class="receipt-message">
-              {{ props.reservationReceipt.message }}
-            </p>
-            <p v-if="props.reservationFetchedAt" class="receipt-timestamp">
-              提交时间：{{ formatDateTime(props.reservationFetchedAt) }}
-            </p>
-
-            <button
-              class="reservation-return-button"
-              type="button"
-              @click="returnToSeatList({ refresh: true })"
-            >
-              返回座位列表
-            </button>
-          </section>
+        <div v-else class="state-panel initial-state">
+          <h3>查询馆内余座</h3>
+          <p>选择馆舍和日期，可按楼层、时间及设施进一步筛选。</p>
         </div>
       </section>
-    </div>
+
+      <div
+        v-if="isSeatModalOpen && selectedRoom"
+        class="seat-modal-backdrop"
+        @click.self="closeSeatModal"
+      >
+        <section
+          ref="seatModal"
+          class="seat-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="seat-modal-title"
+          aria-describedby="seat-modal-context"
+          tabindex="-1"
+        >
+          <header class="seat-modal-header">
+            <div>
+              <span class="seat-modal-eyebrow">
+                {{
+                  reservationStage === "seats"
+                    ? "区域座位"
+                    : reservationStage === "booking"
+                      ? "座位预约"
+                      : "预约回执"
+                }}
+              </span>
+              <h3 v-if="reservationStage === 'seats'" id="seat-modal-title">
+                {{ selectedRoom.name }}
+              </h3>
+              <h3
+                v-else-if="reservationStage === 'booking'"
+                id="seat-modal-title"
+                ref="bookingHeading"
+                tabindex="-1"
+              >
+                {{ selectedSeat?.label }} 座位预约
+              </h3>
+              <h3
+                v-else
+                id="seat-modal-title"
+                ref="successHeading"
+                tabindex="-1"
+              >
+                预约成功
+              </h3>
+              <p id="seat-modal-context">
+                {{ reservationLocation }} · {{ selectedSeatParams?.date }}
+                <template v-if="reservationStage === 'seats'">
+                  · {{ formatSeatQueryTime(selectedSeatParams) }}
+                </template>
+              </p>
+              <p
+                v-if="reservationStage === 'seats' && props.seatFetchedAt"
+                class="seat-modal-timestamp"
+              >
+                更新时间：{{ formatDateTime(props.seatFetchedAt) }}
+              </p>
+              <p
+                v-else-if="
+                  reservationStage === 'booking' &&
+                  props.reservationDetailsFetchedAt
+                "
+                class="seat-modal-timestamp"
+              >
+                可预约时间更新于：{{
+                  formatDateTime(props.reservationDetailsFetchedAt)
+                }}
+              </p>
+            </div>
+            <div class="seat-modal-actions">
+              <button
+                v-if="reservationStage === 'booking'"
+                class="seat-modal-back"
+                type="button"
+                :disabled="props.reservationSubmitting"
+                @click="returnToSeatList({ refresh: false })"
+              >
+                返回座位
+              </button>
+              <button
+                ref="seatModalCloseButton"
+                class="seat-modal-close"
+                type="button"
+                aria-label="关闭座位详情"
+                :disabled="props.reservationSubmitting"
+                @click="closeSeatModal"
+              >
+                关闭
+              </button>
+            </div>
+          </header>
+
+          <div
+            class="seat-modal-body"
+            :aria-busy="
+              props.seatLoading ||
+              props.reservationDetailsLoading ||
+              props.reservationEndTimesLoading ||
+              props.reservationSubmitting
+            "
+          >
+            <template v-if="reservationStage === 'seats'">
+              <div
+                v-if="props.seatList"
+                class="seat-summary"
+                role="status"
+                aria-live="polite"
+              >
+                <span
+                  >共 {{ formatCount(props.seatList.totalCount) }} 个座位</span
+                >
+                <span>
+                  空闲 {{ formatCount(props.seatList.freeCount) }} 个
+                </span>
+              </div>
+
+              <div
+                v-if="
+                  props.seatLoading ||
+                  (!props.seatList && !props.seatError && !props.seatErrorCode)
+                "
+                class="seat-grid seat-skeleton-grid"
+                aria-label="正在查询区域座位"
+                role="status"
+                aria-live="polite"
+              >
+                <div
+                  v-for="index in 12"
+                  :key="index"
+                  class="seat-item seat-skeleton-item"
+                  aria-hidden="true"
+                >
+                  <span class="seat-skeleton-line is-label"></span>
+                  <span class="seat-skeleton-line"></span>
+                </div>
+              </div>
+
+              <div
+                v-else-if="props.seatError || props.seatErrorCode"
+                class="seat-state seat-error-state"
+                role="alert"
+              >
+                <h4>{{ seatErrorTitle }}</h4>
+                <p>{{ seatErrorDetail }}</p>
+                <button
+                  class="seat-retry-button"
+                  type="button"
+                  :disabled="props.seatLoading"
+                  @click="retrySeatQuery"
+                >
+                  重新加载
+                </button>
+              </div>
+
+              <ul v-else-if="props.seatList && seats.length" class="seat-grid">
+                <li v-for="seat in seats" :key="seat.id">
+                  <button
+                    class="seat-item seat-item-button"
+                    :class="seatStatusClass(seat.status)"
+                    :data-seat-id="seat.id"
+                    type="button"
+                    :aria-label="`${seat.label}，${seat.name || '位置未标注'}，${seatStatusLabel(seat.status)}，查看可预约时间`"
+                    @click="openSeatBooking(seat, $event)"
+                  >
+                    <span class="seat-item-header">
+                      <strong>{{ seat.label }}</strong>
+                      <span class="seat-status">
+                        {{ seatStatusLabel(seat.status) }}
+                      </span>
+                    </span>
+                    <span class="seat-item-name">
+                      {{ seat.name || "位置未标注" }}
+                    </span>
+                    <span v-if="seat.status === 'UNKNOWN'" class="raw-status">
+                      原始状态：{{ seat.rawStatus }}
+                    </span>
+                  </button>
+                </li>
+              </ul>
+
+              <div
+                v-else-if="props.seatList"
+                class="seat-state"
+                role="status"
+                aria-live="polite"
+              >
+                <h4>该区域没有座位数据</h4>
+                <p>图书馆当前未返回该区域的座位列表。</p>
+              </div>
+            </template>
+
+            <template
+              v-else-if="reservationStage === 'booking' && selectedSeat"
+            >
+              <div
+                v-if="isReservationResultUncertain"
+                class="seat-state reservation-uncertain-state"
+                role="alert"
+              >
+                <span class="reservation-state-code">RESULT_UNCERTAIN</span>
+                <h4>{{ reservationErrorTitle }}</h4>
+                <p>{{ reservationErrorDetail }}</p>
+                <p>此状态下不会再次提交当前预约。</p>
+              </div>
+
+              <div
+                v-else-if="
+                  props.reservationDetailsLoading ||
+                  (!props.reservationDetails &&
+                    !props.reservationDetailsError &&
+                    !props.reservationDetailsErrorCode)
+                "
+                class="booking-skeleton"
+                role="status"
+                aria-live="polite"
+                aria-label="正在查询可预约时间"
+              >
+                <span class="booking-skeleton-line is-wide"></span>
+                <span class="booking-skeleton-line"></span>
+                <span class="booking-skeleton-timeline"></span>
+                <span class="booking-skeleton-line is-short"></span>
+              </div>
+
+              <div
+                v-else-if="
+                  props.reservationDetailsError ||
+                  props.reservationDetailsErrorCode
+                "
+                class="seat-state seat-error-state"
+                role="alert"
+              >
+                <h4>{{ reservationDetailsErrorTitle }}</h4>
+                <p>{{ reservationDetailsErrorDetail }}</p>
+                <button
+                  class="seat-retry-button"
+                  type="button"
+                  :disabled="props.reservationDetailsLoading"
+                  @click="retryReservationDetails"
+                >
+                  重新加载
+                </button>
+              </div>
+
+              <div v-else-if="props.reservationDetails" class="booking-panel">
+                <section class="booking-seat-summary" aria-label="当前座位">
+                  <div>
+                    <span>座位</span>
+                    <strong>{{ selectedSeat.label }}</strong>
+                  </div>
+                  <div>
+                    <span>位置</span>
+                    <strong>{{ selectedSeat.name || "位置未标注" }}</strong>
+                  </div>
+                  <div>
+                    <span>当前状态</span>
+                    <strong>{{ seatStatusLabel(selectedSeat.status) }}</strong>
+                  </div>
+                </section>
+
+                <section
+                  class="timeline-section"
+                  aria-labelledby="timeline-title"
+                >
+                  <div class="booking-section-heading">
+                    <div>
+                      <span>当日占用情况</span>
+                      <h4 id="timeline-title">座位时间线</h4>
+                    </div>
+                    <p>红色时段可预约</p>
+                  </div>
+
+                  <div
+                    v-if="
+                      props.reservationDetails.timeline.marks.length ||
+                      props.reservationDetails.timeline.freePeriods.length
+                    "
+                    class="seat-timeline"
+                    aria-hidden="true"
+                  >
+                    <div class="seat-timeline-track">
+                      <span
+                        v-for="(period, index) in props.reservationDetails
+                          .timeline.freePeriods"
+                        :key="`${period.label}-${index}`"
+                        class="seat-timeline-free"
+                        :style="{
+                          left: timelineLeft(period.left),
+                          width: timelineWidth(period.left, period.width),
+                        }"
+                      ></span>
+                    </div>
+                    <span
+                      v-for="(mark, index) in props.reservationDetails.timeline
+                        .marks"
+                      :key="`${mark.label}-${index}`"
+                      class="seat-timeline-mark"
+                      :style="{ left: timelineLeft(mark.left) }"
+                    >
+                      <i></i>
+                      <small>{{ mark.label }}</small>
+                    </span>
+                  </div>
+
+                  <div class="free-periods" aria-label="可预约时段">
+                    <span class="free-periods-label">可预约时段</span>
+                    <ul
+                      v-if="
+                        props.reservationDetails.timeline.freePeriods.length
+                      "
+                    >
+                      <li
+                        v-for="(period, index) in props.reservationDetails
+                          .timeline.freePeriods"
+                        :key="`${period.label}-text-${index}`"
+                      >
+                        {{ period.label }}
+                      </li>
+                    </ul>
+                    <p v-else>图书馆未返回可预约时段。</p>
+                  </div>
+                </section>
+
+                <form
+                  class="reservation-form"
+                  @submit.prevent="submitReservation"
+                >
+                  <div class="reservation-time-grid">
+                    <label class="reservation-field">
+                      <span>开始时间</span>
+                      <select
+                        :value="
+                          selectedStartTime === null
+                            ? ''
+                            : encodeStartValue(selectedStartTime)
+                        "
+                        :disabled="
+                          props.reservationSubmitting ||
+                          !props.reservationDetails.startTimes.length
+                        "
+                        @change="updateReservationStart"
+                      >
+                        <option value="">请选择开始时间</option>
+                        <option
+                          v-for="option in props.reservationDetails.startTimes"
+                          :key="encodeStartValue(option.value)"
+                          :value="encodeStartValue(option.value)"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </label>
+
+                    <label class="reservation-field">
+                      <span>结束时间</span>
+                      <select
+                        :value="
+                          selectedEndTime === null
+                            ? ''
+                            : String(selectedEndTime)
+                        "
+                        :disabled="
+                          props.reservationSubmitting ||
+                          selectedStartTime === null ||
+                          props.reservationEndTimesLoading ||
+                          !props.reservationEndTimes?.length
+                        "
+                        @change="updateReservationEnd"
+                      >
+                        <option value="">
+                          {{
+                            selectedStartTime === null
+                              ? "请先选择开始时间"
+                              : props.reservationEndTimesLoading
+                                ? "正在读取结束时间"
+                                : "请选择结束时间"
+                          }}
+                        </option>
+                        <option
+                          v-for="option in props.reservationEndTimes ?? []"
+                          :key="option.value"
+                          :value="String(option.value)"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <p
+                    v-if="!props.reservationDetails.startTimes.length"
+                    class="reservation-form-hint"
+                    role="status"
+                  >
+                    该座位当前没有可选的预约开始时间。
+                  </p>
+
+                  <div
+                    v-if="props.reservationEndTimesLoading"
+                    class="reservation-inline-state"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    正在读取结束时间…
+                  </div>
+
+                  <div
+                    v-else-if="
+                      selectedStartTime !== null &&
+                      (props.reservationEndTimesError ||
+                        props.reservationEndTimesErrorCode)
+                    "
+                    class="reservation-inline-error"
+                    role="alert"
+                  >
+                    <div>
+                      <strong>{{ reservationEndTimesErrorTitle }}</strong>
+                      <p>{{ reservationEndTimesErrorDetail }}</p>
+                    </div>
+                    <button
+                      class="seat-retry-button"
+                      type="button"
+                      :disabled="props.reservationEndTimesLoading"
+                      @click="retryReservationEndTimes"
+                    >
+                      重试
+                    </button>
+                  </div>
+
+                  <section
+                    v-if="selectedStartOption && selectedEndOption"
+                    class="reservation-summary"
+                    aria-labelledby="reservation-summary-title"
+                  >
+                    <span>提交前核对</span>
+                    <h4 id="reservation-summary-title">预约摘要</h4>
+                    <dl>
+                      <div>
+                        <dt>地点</dt>
+                        <dd>{{ reservationLocation }}</dd>
+                      </div>
+                      <div>
+                        <dt>座位</dt>
+                        <dd>{{ selectedSeat.label }}</dd>
+                      </div>
+                      <div>
+                        <dt>日期</dt>
+                        <dd>{{ selectedSeatParams?.date }}</dd>
+                      </div>
+                      <div>
+                        <dt>时间</dt>
+                        <dd>
+                          {{ selectedStartOption.label }}–{{
+                            selectedEndOption.label
+                          }}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+
+                  <div
+                    v-if="hasCurrentReservationError"
+                    class="reservation-submit-error"
+                    role="alert"
+                  >
+                    <strong>{{ reservationErrorTitle }}</strong>
+                    <p>{{ reservationErrorDetail }}</p>
+                  </div>
+
+                  <div
+                    v-if="props.reservationSubmitting"
+                    class="reservation-submitting"
+                    role="status"
+                    aria-live="assertive"
+                  >
+                    正在提交预约，请保持此窗口开启，不要重复操作。
+                  </div>
+
+                  <button
+                    class="reservation-submit-button"
+                    type="submit"
+                    :disabled="!canSubmitReservation"
+                  >
+                    {{
+                      props.reservationSubmitting
+                        ? "正在提交预约"
+                        : hasCurrentReservationError
+                          ? "重新确认预约"
+                          : "确认预约"
+                    }}
+                  </button>
+                </form>
+              </div>
+            </template>
+
+            <section
+              v-else-if="
+                reservationStage === 'success' && props.reservationReceipt
+              "
+              class="reservation-success"
+              aria-labelledby="reservation-success-title"
+            >
+              <div class="reservation-success-mark" aria-hidden="true">✓</div>
+              <span>图书馆已接受本次预约</span>
+              <h4 id="reservation-success-title">
+                {{ props.reservationReceipt.seatLabel }} 预约成功
+              </h4>
+
+              <dl>
+                <div>
+                  <dt>回执</dt>
+                  <dd>{{ props.reservationReceipt.receipt || "—" }}</dd>
+                </div>
+                <div>
+                  <dt>地点</dt>
+                  <dd>{{ receiptLocation(props.reservationReceipt) }}</dd>
+                </div>
+                <div>
+                  <dt>日期</dt>
+                  <dd>{{ props.reservationReceipt.date }}</dd>
+                </div>
+                <div>
+                  <dt>时间</dt>
+                  <dd>
+                    {{ props.reservationReceipt.beginLabel }}–{{
+                      props.reservationReceipt.endLabel
+                    }}
+                  </dd>
+                </div>
+                <div>
+                  <dt>状态</dt>
+                  <dd>{{ props.reservationReceipt.status }}</dd>
+                </div>
+              </dl>
+
+              <p
+                v-if="props.reservationReceipt.message"
+                class="receipt-message"
+              >
+                {{ props.reservationReceipt.message }}
+              </p>
+              <p v-if="props.reservationFetchedAt" class="receipt-timestamp">
+                提交时间：{{ formatDateTime(props.reservationFetchedAt) }}
+              </p>
+
+              <button
+                class="reservation-return-button"
+                type="button"
+                @click="returnToSeatList({ refresh: true })"
+              >
+                返回座位列表
+              </button>
+            </section>
+          </div>
+        </section>
+      </div>
     </template>
 
-    <LibraryReservationRecordsPanel
-      v-else
-      :loading="props.recordsLoading"
-      :error="props.recordsError"
-      :error-code="props.recordsErrorCode"
-      :page="props.recordsPage"
-      :fetched-at="props.recordsFetchedAt"
-      @query-records="emit('query-reservation-records', $event)"
-      @clear-records="emit('clear-reservation-records')"
-    />
+    <div v-else class="library-records-section">
+      <LibraryReservationRecordsPanel
+        :loading="props.recordsLoading"
+        :error="props.recordsError"
+        :error-code="props.recordsErrorCode"
+        :page="props.recordsPage"
+        :fetched-at="props.recordsFetchedAt"
+        @query-records="emit('query-reservation-records', $event)"
+        @clear-records="emit('clear-reservation-records')"
+      />
+    </div>
   </article>
 </template>
 
@@ -2032,66 +2058,22 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 
-.library-section-nav {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin: 22px 0 18px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--border);
-  scrollbar-width: thin;
-}
-
-.library-section-nav button {
-  flex: 0 0 auto;
-  min-height: 42px;
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  background: var(--bg);
-  color: var(--text);
-  padding: 9px 20px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.library-section-nav button + button {
-  border-left: 0;
-}
-
-.library-section-nav button.active {
-  background: var(--accent);
-  color: var(--bg);
-}
-
-.library-section-nav button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--red) 9%, var(--bg));
-}
-
-.library-section-nav button.active:hover:not(:disabled) {
-  background: var(--red-dark);
-}
-
-.library-section-nav button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.library-section-nav > span {
-  flex: 0 0 auto;
-  margin-left: 12px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .filter-panel {
-  margin-top: 0;
+  margin-top: 22px;
   border: 1px solid var(--border);
   padding: 16px;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 16px;
+}
+
+.library-records-section {
+  margin-top: 22px;
 }
 
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   align-items: end;
 }
@@ -2133,7 +2115,6 @@ onUnmounted(() => {
 .primary-button:focus-visible,
 .page-button:focus-visible,
 .room-card-button:focus-visible,
-.library-section-nav button:focus-visible,
 .seat-item-button:focus-visible,
 .seat-modal-close:focus-visible,
 .seat-modal-back:focus-visible,
@@ -2192,6 +2173,7 @@ onUnmounted(() => {
 
 .query-action {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
 }
 
@@ -3197,14 +3179,8 @@ onUnmounted(() => {
     padding: 18px;
   }
 
-  .library-section-nav {
-    margin-top: 18px;
-  }
-
-  .library-section-nav button {
-    min-height: 40px;
-    padding-inline: 15px;
-    font-size: 13px;
+  .filter-panel {
+    grid-template-columns: 1fr;
   }
 
   .filter-grid,

@@ -9,6 +9,7 @@ import TopBar from "./components/TopBar.vue";
 import type {
   DashboardIcon,
   DashboardViewId,
+  LibraryDashboardSection,
   SemesterOption,
   ToolbarItem,
   WeekOption,
@@ -190,12 +191,13 @@ const selectedWeek = ref(DEFAULT_SCHEDULE_WEEK);
 const customServices = ref<PortalService[]>([]);
 const query = ref("");
 const activeView = ref<DashboardViewId>("services");
+const activeLibrarySection = ref<LibraryDashboardSection>("search");
 
 const toolbarItems: ToolbarItem[] = [
   { id: "services", label: "服务入口" },
   { id: "schedule", label: "课表查询" },
   { id: "grades", label: "成绩查询" },
-  { id: "library", label: "座位查询" },
+  { id: "library", label: "图书馆" },
 ];
 
 const viewComponentMap = {
@@ -331,6 +333,7 @@ const activeViewProps = computed(() => {
   if (activeView.value === "library") {
     return {
       icon: icons.book,
+      section: activeLibrarySection.value,
       loading: libraryLoading.value,
       error: libraryError.value,
       errorCode: libraryErrorCode.value,
@@ -398,6 +401,24 @@ function selectView(viewId: DashboardViewId) {
   if (viewId === "schedule" && schedules.value.length === 0) {
     void loadCachedSchedule(selectedSemester.value);
   }
+}
+
+function selectLibrarySection(section: LibraryDashboardSection) {
+  if (
+    activeView.value === "library" &&
+    section !== activeLibrarySection.value &&
+    libraryReservationSubmitting.value
+  ) {
+    showDashboardMessage(
+      "预约正在提交，请等待结果确认后再切换。",
+      "warning",
+      5000,
+    );
+    return;
+  }
+
+  activeLibrarySection.value = section;
+  selectView("library");
 }
 
 function updateQuery(value: string) {
@@ -780,12 +801,15 @@ onUnmounted(() => {
 <template>
   <TopBar
     :active-view="activeView"
+    :active-library-section="activeLibrarySection"
+    :library-navigation-disabled="libraryReservationSubmitting"
     :toolbar-items="toolbarItems"
     :user-info="userInfo"
     :user-error="user_error"
     :user-status="user_status"
     @login="openLogin"
     @select-view="selectView"
+    @select-library-section="selectLibrarySection"
     @retry-user-info="retryUserInfo"
     @show-dashboard-message="showDashboardMessage"
   />

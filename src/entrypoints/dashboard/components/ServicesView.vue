@@ -306,7 +306,7 @@ function deleteCustomService(service: PortalService) {
               v-model="serviceForm.name"
               type="text"
               autocomplete="off"
-              placeholder="例如：校园卡"
+              placeholder="例如：RUCourse"
             />
           </label>
 
@@ -317,7 +317,7 @@ function deleteCustomService(service: PortalService) {
               type="text"
               inputmode="url"
               autocomplete="off"
-              placeholder="https://example.com"
+              placeholder="例如：http://10.97.25.119"
             />
           </label>
 

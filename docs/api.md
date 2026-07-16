@@ -330,3 +330,268 @@
   }
 }
 ```
+
+### 查询预约记录
+
+#### 查询今日预约
+
+`https://zwlib.ruc.edu.cn/jsq/static/frontApi/user/lastMake`
+
+##### Payload
+```json
+{}
+```
+
+##### Response
+
+```json
+{
+  "status" : true,
+  "code" : 200,
+  "message" : "操作成功",
+  "data" : [ {
+    "ctId" : "",
+    "id" : ,
+    "roomId" : ,
+    "seatId" : ,
+    "seatLabel" : ,
+    "oneself" : true,
+    "username" : ,
+    "fullName" : ,
+    "receipt" : ,
+    "makeDate" : ,
+    "makeBegin" : ,
+    "makeEnd" : ,
+    "actualBegin" : "",
+    "actualEnd" : -1,
+    "awayTime" : "",
+    "resTime" : "",
+    "useMinute" : 0,
+    "kwhRate" : "",
+    "status" : "RESERVE",
+    "isSign" : 1,
+    "remark" : "",
+    "makeDateStr" : ,
+    "makeBeginStr" : ,
+    "makeEndStr" : ,
+    "actualStr" : "",
+    "awayRange" : "",
+    "buildName" : ,
+    "floorName" : ,
+    "roomName" : ,
+    "location" : ,
+    "buildNameE" : ,
+    "floorNameE" : ,
+    "roomNameE" : ,
+    "locationE" : ,
+    "message" : "请在  至  之间完成签到",
+    "linkId" : "0",
+    "showCheckBtn" : false,
+    "awayTimeM" : 0
+  }, {
+    "ctId" : "",
+    "id" : ,
+    "roomId" : ,
+    "seatId" : ,
+    "seatLabel" : ,
+    "oneself" : true,
+    "username" : ,
+    "fullName" : ,
+    "receipt" : ,
+    "makeDate" : ,
+    "makeBegin" : ,
+    "makeEnd" : ,
+    "actualBegin" : "",
+    "actualEnd" : -1,
+    "awayTime" : "",
+    "resTime" : "",
+    "useMinute" : 0,
+    "kwhRate" : "",
+    "status" : "CANCEL",
+    "isSign" : 1,
+    "remark" : "",
+    "makeDateStr" : ,
+    "makeBeginStr" : ,
+    "makeEndStr" : ,
+    "actualStr" : "",
+    "awayRange" : "",
+    "buildName" : ,
+    "floorName" : ,
+    "roomName" : ,
+    "location" : ,
+    "buildNameE" : ,
+    "floorNameE" : ,
+    "roomNameE" : ,
+    "locationE" : ,
+    "message" : "用户通过电脑端取消预约",
+    "linkId" : "0",
+    "showCheckBtn" : false,
+    "awayTimeM" : 0
+  } ]
+}
+```
+
+#### 查询历史预约
+
+`https://zwlib.ruc.edu.cn/jsq/static/frontApi/user/history/0/10`
+
+##### Payload
+
+```json
+{}
+```
+
+##### Response
+示例
+```json
+{
+  "status" : true,
+  "code" : 200,
+  "message" : "操作成功",
+  "data" : {
+    "count" : 47,
+    "list" : [ {
+      "ctId" : "",
+      "id" : ,
+      "roomId" : ,
+      "seatId" : ,
+      "seatLabel" : ,
+      "oneself" : true,
+      "username" : ,
+      "fullName" : ,
+      "receipt" : ,
+      "makeDate" : ,
+      "makeBegin" : ,
+      "makeEnd" : ,
+      "actualBegin" : "",
+      "actualEnd" : -1,
+      "awayTime" : "",
+      "resTime" : "",
+      "useMinute" : 0,
+      "kwhRate" : "",
+      "status" : "CANCEL",
+      "isSign" : 1,
+      "remark" : "",
+      "makeDateStr" : ,
+      "makeBeginStr" : ,
+      "makeEndStr" : ,
+      "actualStr" : "",
+      "awayRange" : "",
+      "buildName" : ,
+      "floorName" : ,
+      "roomName" : ,
+      "location" : ,
+      "buildNameE" : ,
+      "floorNameE" : ,
+      "roomNameE" : ,
+      "locationE" : ,
+      "message" : "用户通过移动端取消预约",
+      "linkId" : "0",
+      "showCheckBtn" : false,
+      "awayTimeM" : 0
+    }, {
+      "ctId" : "",
+      "id" : ,
+      "roomId" : ,
+      "seatId" : ,
+      "seatLabel" : ,
+      "oneself" : true,
+      "username" : ,
+      "fullName" : ,
+      "receipt" : ,
+      "makeDate" : ,
+      "makeBegin" : ,
+      "makeEnd" : ,
+      "actualBegin" : ,
+      "actualEnd" : ,
+      "awayTime" : ,
+      "resTime" : ,
+      "useMinute" : ,
+      "kwhRate" : "",
+      "status" : "STOP",
+      "isSign" : 1,
+      "remark" : "",
+      "makeDateStr" : ,
+      "makeBeginStr" : ,
+      "makeEndStr" : ,
+      "actualStr" : ,
+      "awayRange" : ,
+      "buildName" : ,
+      "floorName" : ,
+      "roomName" : ,
+      "location" : ,
+      "buildNameE" : ,
+      "floorNameE" : ,
+      "roomNameE" : ,
+      "locationE" : ,
+      "message" : ,
+      "linkId" : "0",
+      "showCheckBtn" : false,
+      "awayTimeM" : 
+    } ]
+  }
+}
+```
+
+#### 查询违约记录
+
+`https://zwlib.ruc.edu.cn/jsq/static/frontApi/user/breach/0/10`
+
+##### Payload
+
+```json
+{}
+```
+
+##### Response
+示例
+```json
+{
+  "status" : true,
+  "code" : 200,
+  "message" : "操作成功",
+  "data" : {
+    "count" : 1,
+    "list" : [ {
+      "ctId" : "",
+      "id" : ,
+      "roomId" : ,
+      "seatId" : ,
+      "seatLabel" : ,
+      "oneself" : true,
+      "username" : ,
+      "fullName" : ,
+      "receipt" : ,
+      "makeDate" : ,
+      "makeBegin" : ,
+      "makeEnd" : ,
+      "actualBegin" : ,
+      "actualEnd" : ,
+      "awayTime" : ,
+      "resTime" : "",
+      "useMinute" : ,
+      "kwhRate" : "",
+      "status" : "LEAVE_EARLY",
+      "isSign" : 1,
+      "remark" : "",
+      "makeDateStr" : ,
+      "makeBeginStr" : ,
+      "makeEndStr" : ,
+      "actualStr" : ,
+      "awayRange" : ,
+      "buildName" : ,
+      "floorName" : ,
+      "roomName" : ,
+      "location" : ,
+      "buildNameE" : ,
+      "floorNameE" : ,
+      "roomNameE" : ,
+      "locationE" : ,
+      "message" : ,
+      "linkId" : "0",
+      "showCheckBtn" : false,
+      "awayTimeM" : 
+    } ]
+  }
+}
+```

@@ -8,6 +8,7 @@ import {
 import { fetchSchedule } from '@/services/schedule'
 import { getLoginStatus, getUserInfo } from '@/services/user'
 import {
+  fetchLibraryReservationRecords,
   fetchLibraryRooms,
   fetchLibrarySeatEndTimes,
   fetchLibrarySeatReservationDetails,
@@ -89,6 +90,13 @@ export default defineBackground(() => {
     }
     if (message?.type === 'RUC_LIBRARY_SEATS_QUERY') {
       return await fetchLibrarySeats(
+        message.params,
+        storeId,
+        sender.tab?.windowId,
+      )
+    }
+    if (message?.type === 'RUC_LIBRARY_RESERVATION_RECORDS_QUERY') {
+      return await fetchLibraryReservationRecords(
         message.params,
         storeId,
         sender.tab?.windowId,

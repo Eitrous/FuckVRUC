@@ -18,6 +18,7 @@ import { builtinServices, resolveMailUrl } from "@/services/services-index";
 import type { CustomPortalServiceInput, PortalService } from "@/types/service";
 import { useGrades } from "@/composables/useGrades";
 import { useLibraryRooms } from "@/composables/useLibraryRooms";
+import { useLibraryReservationRecords } from "@/composables/useLibraryReservationRecords";
 import { useSchedules } from "@/composables/useSchedules";
 import { useUserInfo } from "@/composables/useUserInfo";
 import DashboardMessage  from "./components/DashboardMessage.vue";
@@ -125,6 +126,16 @@ const {
   submitLibraryReservation,
   clearLibraryReservation,
 } = useLibraryRooms();
+
+const {
+  loading: libraryRecordsLoading,
+  error: libraryRecordsError,
+  errorCode: libraryRecordsErrorCode,
+  page: libraryRecordsPage,
+  fetchedAt: libraryRecordsFetchedAt,
+  queryLibraryReservationRecords,
+  clearLibraryReservationRecords,
+} = useLibraryReservationRecords();
 
 const DEFAULT_SCHEDULE_SEMESTER = "2025-2026-2";
 const DEFAULT_SCHEDULE_WEEK = 1;
@@ -345,6 +356,11 @@ const activeViewProps = computed(() => {
       reservationErrorCode: libraryReservationErrorCode.value,
       reservationReceipt: libraryReservationReceipt.value,
       reservationFetchedAt: libraryReservationFetchedAt.value,
+      recordsLoading: libraryRecordsLoading.value,
+      recordsError: libraryRecordsError.value,
+      recordsErrorCode: libraryRecordsErrorCode.value,
+      recordsPage: libraryRecordsPage.value,
+      recordsFetchedAt: libraryRecordsFetchedAt.value,
     };
   }
 
@@ -374,6 +390,7 @@ function selectView(viewId: DashboardViewId) {
 
   if (activeView.value === "library" && viewId !== "library") {
     clearLibraryRooms();
+    clearLibraryReservationRecords();
   }
 
   activeView.value = viewId;
@@ -729,6 +746,15 @@ watch(
   },
 );
 
+watch(
+  libraryReservationReceipt,
+  (receipt) => {
+    if (receipt) {
+      clearLibraryReservationRecords();
+    }
+  },
+);
+
 onMounted(() => {
   void syncUserInfo(true);
   void restoreCustomServices();
@@ -740,6 +766,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearDashboardMessageTimer();
+  clearLibraryReservationRecords();
   userSyncDisposed = true;
   userSyncPending = false;
   if (userSyncTimer !== undefined) {
@@ -790,6 +817,8 @@ onUnmounted(() => {
         @query-reservation-end-times="queryLibrarySeatEndTimes"
         @submit-reservation="submitLibraryReservation"
         @clear-reservation="clearLibraryReservation"
+        @query-reservation-records="queryLibraryReservationRecords"
+        @clear-reservation-records="clearLibraryReservationRecords"
       />
     </div>
   </main>

@@ -229,3 +229,74 @@ export type LibraryReservationSubmitResult =
       errorCode: LibraryReservationErrorCode
       fetchedAt: number
     }
+
+export type LibraryReservationRecordCategory =
+  | 'today'
+  | 'history'
+  | 'breach'
+
+export type LibraryReservationRecordStatus =
+  | 'CHECK_IN'
+  | 'LEAVE_EARLY'
+  | 'AWAY'
+  | 'RESERVE'
+  | 'STOP'
+  | 'MISS'
+  | 'CANCEL'
+  | 'NO_STOP'
+  | 'UNKNOWN'
+
+export type LibraryReservationRecord = {
+  id: string
+  roomId: string
+  seatId: string
+  seatLabel: string
+  receipt: string
+  date: string
+  beginMinute: number
+  endMinute: number
+  beginLabel: string
+  endLabel: string
+  actualBeginMinute?: number
+  actualEndMinute?: number
+  actualTimeLabel: string
+  awayRange: string
+  useMinute: number
+  status: LibraryReservationRecordStatus
+  rawStatus: string
+  buildingName: string
+  floorName: string
+  roomName: string
+  location: string
+  message: string
+}
+
+export type LibraryReservationRecordPage = {
+  items: LibraryReservationRecord[]
+  category: LibraryReservationRecordCategory
+  currentPage: number
+  pageSize: 10
+  totalCount: number
+  totalPage: number
+  hasPrevious: boolean
+  hasNext: boolean
+}
+
+export type LibraryReservationRecordsQueryParams = {
+  category: LibraryReservationRecordCategory
+  currentPage: number
+  pageSize: 10
+}
+
+export type LibraryReservationRecordsQueryResult =
+  | {
+      ok: true
+      page: LibraryReservationRecordPage
+      fetchedAt: number
+    }
+  | {
+      ok: false
+      error: string
+      errorCode: LibraryQueryErrorCode
+      fetchedAt: number
+    }

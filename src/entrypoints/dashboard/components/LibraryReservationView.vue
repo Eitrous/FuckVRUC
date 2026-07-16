@@ -16,6 +16,8 @@ import {
   type LibraryFloorId,
   type LibraryQueryErrorCode,
   type LibraryReservationErrorCode,
+  type LibraryReservationRecordPage,
+  type LibraryReservationRecordsQueryParams,
   type LibraryReservationReceipt,
   type LibraryReservationStartValue,
   type LibraryReservationSubmitParams,
@@ -32,6 +34,7 @@ import {
   type LibraryTimeOption,
 } from "@/types/library";
 import type { DashboardIcon } from "../types";
+import LibraryReservationRecordsPanel from "./LibraryReservationRecordsPanel.vue";
 
 const DEFAULT_BUILDING_ID = "1875080631899230208" as LibraryBuildingId;
 const PAGE_SIZE = 20;
@@ -63,6 +66,11 @@ const props = defineProps<{
   reservationErrorCode?: LibraryReservationErrorCode;
   reservationReceipt?: LibraryReservationReceipt | null;
   reservationFetchedAt?: number;
+  recordsLoading: boolean;
+  recordsError?: string;
+  recordsErrorCode?: LibraryQueryErrorCode;
+  recordsPage?: LibraryReservationRecordPage | null;
+  recordsFetchedAt?: number;
 }>();
 
 const emit = defineEmits<{
@@ -80,6 +88,11 @@ const emit = defineEmits<{
   ): void;
   (event: "submit-reservation", params: LibraryReservationSubmitParams): void;
   (event: "clear-reservation"): void;
+  (
+    event: "query-reservation-records",
+    params: LibraryReservationRecordsQueryParams,
+  ): void;
+  (event: "clear-reservation-records"): void;
 }>();
 
 function formatLocalDate(date = new Date()) {
@@ -101,6 +114,7 @@ const filters = reactive({
   windows: false,
 });
 const validationError = ref("");
+const activeLibrarySection = ref<"search" | "records">("search");
 const lastSubmittedParams = ref<LibraryRoomQueryParams | null>(null);
 const isSeatModalOpen = ref(false);
 const selectedRoom = ref<LibraryRoom | null>(null);
@@ -731,6 +745,21 @@ function closeSeatModal() {
   });
 }
 
+function selectLibrarySection(section: "search" | "records") {
+  if (
+    section === activeLibrarySection.value ||
+    props.reservationSubmitting
+  ) {
+    return;
+  }
+
+  if (section === "records" && isSeatModalOpen.value) {
+    closeSeatModal();
+  }
+
+  activeLibrarySection.value = section;
+}
+
 function retrySeatQuery() {
   if (props.seatLoading || !selectedSeatParams.value) return;
 
@@ -1122,23 +1151,72 @@ onUnmounted(() => {
   window.removeEventListener("keydown", handleSeatModalKeydown);
   emit("clear-reservation");
   emit("clear-seats");
+  emit("clear-reservation-records");
   unlockBodyScroll();
 });
 </script>
 
 <template>
-  <article class="data-panel" :aria-busy="props.loading">
+  <article
+    class="data-panel"
+    :aria-busy="
+      activeLibrarySection === 'search'
+        ? props.loading
+        : props.recordsLoading
+    "
+  >
     <header class="panel-header">
       <div class="panel-title">
         <Icon :icon="props.icon" aria-hidden="true" />
         <div>
-          <h2>图书馆余座</h2>
-          <p v-if="props.fetchedAt" class="timestamp">
-            更新时间：{{ formatDateTime(props.fetchedAt) }}
+          <h2>
+            {{ activeLibrarySection === "search" ? "图书馆余座" : "预约记录" }}
+          </h2>
+          <p
+            v-if="
+              activeLibrarySection === 'search'
+                ? props.fetchedAt
+                : props.recordsFetchedAt
+            "
+            class="timestamp"
+          >
+            更新时间：{{
+              formatDateTime(
+                activeLibrarySection === "search"
+                  ? props.fetchedAt!
+                  : props.recordsFetchedAt!,
+              )
+            }}
           </p>
         </div>
       </div>
     </header>
+
+    <nav class="library-section-nav" aria-label="图书馆功能分栏">
+      <button
+        type="button"
+        :class="{ active: activeLibrarySection === 'search' }"
+        :aria-pressed="activeLibrarySection === 'search'"
+        :disabled="props.reservationSubmitting"
+        @click="selectLibrarySection('search')"
+      >
+        余座查询
+      </button>
+      <button
+        type="button"
+        :class="{ active: activeLibrarySection === 'records' }"
+        :aria-pressed="activeLibrarySection === 'records'"
+        :disabled="props.reservationSubmitting"
+        @click="selectLibrarySection('records')"
+      >
+        预约记录
+      </button>
+      <span v-if="props.reservationSubmitting" role="status">
+        预约提交期间暂不能切换
+      </span>
+    </nav>
+
+    <template v-if="activeLibrarySection === 'search'">
 
     <form
       class="filter-panel"
@@ -1890,6 +1968,18 @@ onUnmounted(() => {
         </div>
       </section>
     </div>
+    </template>
+
+    <LibraryReservationRecordsPanel
+      v-else
+      :loading="props.recordsLoading"
+      :error="props.recordsError"
+      :error-code="props.recordsErrorCode"
+      :page="props.recordsPage"
+      :fetched-at="props.recordsFetchedAt"
+      @query-records="emit('query-reservation-records', $event)"
+      @clear-records="emit('clear-reservation-records')"
+    />
   </article>
 </template>
 
@@ -1942,8 +2032,59 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 
+.library-section-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 22px 0 18px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: thin;
+}
+
+.library-section-nav button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  background: var(--bg);
+  color: var(--text);
+  padding: 9px 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.library-section-nav button + button {
+  border-left: 0;
+}
+
+.library-section-nav button.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.library-section-nav button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 9%, var(--bg));
+}
+
+.library-section-nav button.active:hover:not(:disabled) {
+  background: var(--red-dark);
+}
+
+.library-section-nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.library-section-nav > span {
+  flex: 0 0 auto;
+  margin-left: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .filter-panel {
-  margin-top: 22px;
+  margin-top: 0;
   border: 1px solid var(--border);
   padding: 16px;
 }
@@ -1992,6 +2133,7 @@ onUnmounted(() => {
 .primary-button:focus-visible,
 .page-button:focus-visible,
 .room-card-button:focus-visible,
+.library-section-nav button:focus-visible,
 .seat-item-button:focus-visible,
 .seat-modal-close:focus-visible,
 .seat-modal-back:focus-visible,
@@ -3053,6 +3195,16 @@ onUnmounted(() => {
 @media (max-width: 640px) {
   .data-panel {
     padding: 18px;
+  }
+
+  .library-section-nav {
+    margin-top: 18px;
+  }
+
+  .library-section-nav button {
+    min-height: 40px;
+    padding-inline: 15px;
+    font-size: 13px;
   }
 
   .filter-grid,

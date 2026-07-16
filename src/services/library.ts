@@ -2,6 +2,12 @@ import {
   LIBRARY_BUILDINGS,
   type LibraryQueryErrorCode,
   type LibraryReservationErrorCode,
+  type LibraryReservationRecord,
+  type LibraryReservationRecordCategory,
+  type LibraryReservationRecordPage,
+  type LibraryReservationRecordsQueryParams,
+  type LibraryReservationRecordsQueryResult,
+  type LibraryReservationRecordStatus,
   type LibraryReservationReceipt,
   type LibraryReservationStartValue,
   type LibraryReservationSubmitParams,
@@ -36,6 +42,7 @@ const CLIENT_DATE_TIME_IV = 'client_date_time'
 const AUTH_FAILURE_CODES = new Set(['20002', '20003'])
 const LIBRARY_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const DEFAULT_PAGE_SIZE = 20
+const DEFAULT_RECORD_PAGE_SIZE = 10 as const
 const REQUEST_TIMEOUT_MS = 15_000
 
 type ApiEnvelope = {
@@ -360,7 +367,7 @@ function formatLocalDate(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function isValidQueryDate(value: unknown) {
+function isValidCalendarDate(value: unknown): value is string {
   if (typeof value !== 'string' || !LIBRARY_DATE_PATTERN.test(value)) {
     return false
   }
@@ -371,7 +378,13 @@ function isValidQueryDate(value: unknown) {
   return (
     date.getFullYear() === year &&
     date.getMonth() === month - 1 &&
-    date.getDate() === day &&
+    date.getDate() === day
+  )
+}
+
+function isValidQueryDate(value: unknown) {
+  return (
+    isValidCalendarDate(value) &&
     value >= formatLocalDate(new Date())
   )
 }
@@ -924,6 +937,254 @@ function normalizeReservationReceipt(
   }
 }
 
+const RESERVATION_RECORD_STATUSES = new Set<LibraryReservationRecordStatus>([
+  'CHECK_IN',
+  'LEAVE_EARLY',
+  'AWAY',
+  'RESERVE',
+  'STOP',
+  'MISS',
+  'CANCEL',
+  'NO_STOP',
+])
+
+function normalizeReservationRecordStatus(
+  value: string,
+): LibraryReservationRecordStatus {
+  return RESERVATION_RECORD_STATUSES.has(
+    value as LibraryReservationRecordStatus,
+  )
+    ? value as LibraryReservationRecordStatus
+    : 'UNKNOWN'
+}
+
+function numericRecordId(value: unknown) {
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    return value.trim()
+  }
+
+  if (
+    typeof value === 'number' &&
+    Number.isSafeInteger(value) &&
+    value >= 0
+  ) {
+    return String(value)
+  }
+
+  return undefined
+}
+
+function optionalRecordString(value: unknown) {
+  if (value === undefined || value === null) return ''
+  return typeof value === 'string' ? value.trim() : undefined
+}
+
+function optionalRecordMinute(value: unknown) {
+  if (value === '' || value === null || value === undefined || value === -1) {
+    return undefined
+  }
+
+  const minute = asNonNegativeInteger(value)
+  return minute !== undefined && minute <= 1_439 ? minute : undefined
+}
+
+function normalizeReservationRecord(
+  value: unknown,
+): LibraryReservationRecord | undefined {
+  if (!isRecord(value)) return undefined
+
+  const id = numericRecordId(value.id)
+  const roomId = numericRecordId(value.roomId)
+  const seatId = numericRecordId(value.seatId)
+  const seatLabel = optionalRecordString(value.seatLabel)
+  const receipt = optionalRecordString(value.receipt)
+  const date = optionalRecordString(value.makeDateStr)
+  const beginMinute = asNonNegativeInteger(value.makeBegin)
+  const endMinute = asNonNegativeInteger(value.makeEnd)
+  const beginLabel = optionalRecordString(value.makeBeginStr)
+  const endLabel = optionalRecordString(value.makeEndStr)
+  const statusValue = optionalRecordString(value.status)
+  const useMinute = asNonNegativeInteger(value.useMinute)
+  const actualBeginMinute = optionalRecordMinute(value.actualBegin)
+  const actualEndMinute = optionalRecordMinute(value.actualEnd)
+
+  if (
+    !id ||
+    !roomId ||
+    !seatId ||
+    !seatLabel ||
+    receipt === undefined ||
+    !date ||
+    !isValidCalendarDate(date) ||
+    beginMinute === undefined ||
+    beginMinute > 1_439 ||
+    endMinute === undefined ||
+    endMinute > 1_439 ||
+    endMinute <= beginMinute ||
+    !beginLabel ||
+    !endLabel ||
+    !statusValue ||
+    useMinute === undefined ||
+    (value.actualBegin !== '' &&
+      value.actualBegin !== null &&
+      value.actualBegin !== undefined &&
+      value.actualBegin !== -1 &&
+      actualBeginMinute === undefined) ||
+    (value.actualEnd !== '' &&
+      value.actualEnd !== null &&
+      value.actualEnd !== undefined &&
+      value.actualEnd !== -1 &&
+      actualEndMinute === undefined)
+  ) {
+    return undefined
+  }
+
+  const optionalFields = [
+    value.actualStr,
+    value.awayRange,
+    value.buildName,
+    value.floorName,
+    value.roomName,
+    value.location,
+    value.message,
+  ]
+
+  if (optionalFields.some((field) => optionalRecordString(field) === undefined)) {
+    return undefined
+  }
+
+  return {
+    id,
+    roomId,
+    seatId,
+    seatLabel,
+    receipt,
+    date,
+    beginMinute,
+    endMinute,
+    beginLabel,
+    endLabel,
+    actualBeginMinute,
+    actualEndMinute,
+    actualTimeLabel: optionalRecordString(value.actualStr) ?? '',
+    awayRange: optionalRecordString(value.awayRange) ?? '',
+    useMinute,
+    status: normalizeReservationRecordStatus(statusValue),
+    rawStatus: statusValue,
+    buildingName: optionalRecordString(value.buildName) ?? '',
+    floorName: optionalRecordString(value.floorName) ?? '',
+    roomName: optionalRecordString(value.roomName) ?? '',
+    location: optionalRecordString(value.location) ?? '',
+    message: optionalRecordString(value.message) ?? '',
+  }
+}
+
+function normalizeReservationRecordsQueryParams(
+  params: LibraryReservationRecordsQueryParams,
+) {
+  const categories: LibraryReservationRecordCategory[] = [
+    'today',
+    'history',
+    'breach',
+  ]
+
+  if (
+    !categories.includes(params?.category) ||
+    !Number.isInteger(params?.currentPage) ||
+    params.currentPage < 1 ||
+    (params.category === 'today' && params.currentPage !== 1) ||
+    params?.pageSize !== DEFAULT_RECORD_PAGE_SIZE
+  ) {
+    throw new LibraryQueryError(
+      'API_ERROR',
+      '预约记录查询条件无效，请重新选择分类或页码。',
+    )
+  }
+
+  return {
+    category: params.category,
+    currentPage: params.currentPage,
+    serverPage: params.currentPage - 1,
+    pageSize: DEFAULT_RECORD_PAGE_SIZE,
+  }
+}
+
+function normalizeReservationRecordPage(
+  value: unknown,
+  params: ReturnType<typeof normalizeReservationRecordsQueryParams>,
+): LibraryReservationRecordPage {
+  let rawItems: unknown[]
+  let totalCount: number
+
+  if (params.category === 'today') {
+    if (!Array.isArray(value)) {
+      throw new LibraryQueryError(
+        'INVALID_RESPONSE',
+        '图书馆系统返回了无效的今日预约数据。',
+      )
+    }
+
+    rawItems = value
+    totalCount = value.length
+  } else {
+    if (!isRecord(value)) {
+      throw new LibraryQueryError(
+        'INVALID_RESPONSE',
+        '图书馆系统返回了无效的预约记录分页数据。',
+      )
+    }
+
+    const count = asNonNegativeInteger(value.count)
+    const list = value.list === null ? [] : value.list
+
+    if (
+      count === undefined ||
+      !Array.isArray(list) ||
+      list.length > params.pageSize ||
+      list.length > count
+    ) {
+      throw new LibraryQueryError(
+        'INVALID_RESPONSE',
+        '图书馆系统返回了无效的预约记录分页数据。',
+      )
+    }
+
+    rawItems = list
+    totalCount = count
+  }
+
+  const items = rawItems.map(normalizeReservationRecord)
+  if (items.some((item) => item === undefined)) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的预约记录。',
+    )
+  }
+
+  const totalPage = params.category === 'today'
+    ? 1
+    : Math.max(1, Math.ceil(totalCount / params.pageSize))
+
+  if (params.category !== 'today' && params.currentPage > totalPage) {
+    throw new LibraryQueryError(
+      'INVALID_RESPONSE',
+      '图书馆系统返回了无效的预约记录分页数据。',
+    )
+  }
+
+  return {
+    items: items as LibraryReservationRecord[],
+    category: params.category,
+    currentPage: params.category === 'today' ? 1 : params.currentPage,
+    pageSize: params.pageSize,
+    totalCount,
+    totalPage,
+    hasPrevious: params.category !== 'today' && params.currentPage > 1,
+    hasNext:
+      params.category !== 'today' && params.currentPage < totalPage,
+  }
+}
+
 function normalizeCaptchaMode(value: unknown): 0 | 1 | 2 | undefined {
   const numeric =
     typeof value === 'number'
@@ -1118,6 +1379,69 @@ export async function fetchLibrarySeats(
     return errorResult(
       'API_ERROR',
       '图书馆座位查询失败，请稍后重试。',
+    )
+  }
+}
+
+export async function fetchLibraryReservationRecords(
+  params: LibraryReservationRecordsQueryParams,
+  storeId?: string,
+  windowId?: number,
+): Promise<LibraryReservationRecordsQueryResult> {
+  let token: string | undefined
+
+  try {
+    const normalized = normalizeReservationRecordsQueryParams(params)
+    const authentication = await resolveOrStartLibraryAuthentication(
+      storeId,
+      windowId,
+    )
+
+    if (authentication.status === 'pending') {
+      return errorResult(
+        'AUTH_PENDING',
+        '正在通过统一身份认证连接图书馆。',
+      )
+    }
+
+    if (authentication.status === 'failed') {
+      return errorResult(
+        'AUTH_REQUIRED',
+        '未能完成图书馆自动登录，请在打开的登录页完成认证后重试。',
+      )
+    }
+
+    token = authentication.token
+    const url = normalized.category === 'today'
+      ? `${LIBRARY_API_ROOT}/frontApi/user/lastMake`
+      : `${LIBRARY_API_ROOT}/frontApi/user/${normalized.category}/${normalized.serverPage}/${normalized.pageSize}`
+    const data = await postProtectedQuery(
+      token,
+      url,
+      '读取图书馆预约记录失败',
+    )
+
+    return {
+      ok: true,
+      page: normalizeReservationRecordPage(data, normalized),
+      fetchedAt: Date.now(),
+    }
+  } catch (error) {
+    if (error instanceof LibraryQueryError) {
+      if (error.code === 'AUTH_REQUIRED' && token) {
+        await rejectLibraryToken(token, storeId)
+        return errorResult(
+          'AUTH_PENDING',
+          '图书馆登录已过期，正在重新进行统一身份认证。',
+        )
+      }
+
+      return errorResult(error.code, error.message)
+    }
+
+    return errorResult(
+      'API_ERROR',
+      '读取图书馆预约记录失败，请稍后重试。',
     )
   }
 }

@@ -51,7 +51,7 @@ async function loadSettings() {
         ? storedSimplifyMyRuc
         : DEFAULT_SIMPLIFY_MY_RUC;
   } catch (error) {
-    console.error('Failed to load popup settings:', error);
+    // console.error('Failed to load popup settings:', error);
   } finally {
     settingsLoaded.value = true;
   }
@@ -63,7 +63,7 @@ async function saveDashboardButtonVisibility() {
       [SHOW_DASHBOARD_BUTTON_STORAGE_KEY]: showDashboardButton.value,
     });
   } catch (error) {
-    console.error('Failed to save dashboard button visibility:', error);
+    // console.error('Failed to save dashboard button visibility:', error);
   }
 }
 
@@ -73,7 +73,7 @@ async function saveSimplifyMyRuc() {
       [SIMPLIFY_MY_RUC_STORAGE_KEY]: simplifyMyRuc.value,
     });
   } catch (error) {
-    console.error('Failed to save my.ruc simplification setting:', error);
+    // console.error('Failed to save my.ruc simplification setting:', error);
   }
 }
 

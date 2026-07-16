@@ -578,7 +578,7 @@ export async function fetchJw(
   storeId?: string,
 ) {
   const credential = await resolveJwCredential({ storeId })
-
+  // console.log("Resolved JW credential:", credential, "for storeId:", storeId);
   if (!credential) {
     throw new JwAuthError(
       'NOT_AUTHENTICATED',
@@ -587,7 +587,7 @@ export async function fetchJw(
   }
 
   const firstResponse = await performJwRequest(input, init, credential)
-
+  // console.log("First JW request response:", firstResponse, "for input:", input, "with init:", init);
   if (!(await isAuthenticationFailure(firstResponse))) {
     if (firstResponse.ok) {
       await rememberCredential(credential, storeId)

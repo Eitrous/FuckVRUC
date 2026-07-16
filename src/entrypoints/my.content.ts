@@ -57,7 +57,7 @@ export default defineContentScript({
           : DEFAULT_SIMPLIFY_MY_RUC,
       );
     } catch (error) {
-      console.error('Failed to load my.ruc simplification setting:', error);
+      // console.error('Failed to load my.ruc simplification setting:', error);
 
       if (!ctx.isInvalid && settingsRevision === revisionBeforeLoad) {
         setSimplificationEnabled(DEFAULT_SIMPLIFY_MY_RUC);

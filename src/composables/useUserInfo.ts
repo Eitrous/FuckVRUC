@@ -57,7 +57,7 @@ export function useUserInfo() {
             user_status.value = "ready";
             return true;
         } catch (error) {
-            console.error("Error fetching user info:", error);
+            // console.error("Error fetching user info:", error);
 
             if (requestId !== latestRequest) return false;
 

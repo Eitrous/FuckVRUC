@@ -443,7 +443,7 @@ async function selectScheduleSemester(semester: string) {
       [SELECTED_SCHEDULE_SEMESTER_STORAGE_KEY]: semester,
     });
   } catch (err) {
-    console.error("Failed to save selected schedule semester:", err);
+    // console.error("Failed to save selected schedule semester:", err);
   }
 
   await loadCachedSchedule(semester);
@@ -459,7 +459,7 @@ async function selectScheduleWeek(week: number) {
       [SELECTED_SCHEDULE_WEEK_STORAGE_KEY]: week,
     });
   } catch (err) {
-    console.error("Failed to save selected schedule week:", err);
+    // console.error("Failed to save selected schedule week:", err);
   }
 }
 
@@ -556,7 +556,7 @@ async function saveCustomServices(services: PortalService[]) {
       [CUSTOM_SERVICES_STORAGE_KEY]: services,
     });
   } catch (err) {
-    console.error("Failed to save custom services:", err);
+    // console.error("Failed to save custom services:", err);
     showDashboardMessage("保存自定义服务失败", "warning", 5000);
   }
 }
@@ -688,7 +688,7 @@ async function restoreSelectedScheduleSemester() {
       selectedSemester.value = storedSemester;
     }
   } catch (err) {
-    console.error("Failed to restore selected schedule semester:", err);
+    // console.error("Failed to restore selected schedule semester:", err);
   }
 
   await loadCachedSchedule(selectedSemester.value);
@@ -706,7 +706,7 @@ async function restoreSelectedScheduleWeek() {
       selectedWeek.value = week;
     }
   } catch (err) {
-    console.error("Failed to restore selected schedule week:", err);
+    // console.error("Failed to restore selected schedule week:", err);
   }
 }
 
@@ -732,7 +732,7 @@ async function restoreCustomServices() {
 
     customServices.value = restoredServices;
   } catch (err) {
-    console.error("Failed to restore custom services:", err);
+    // console.error("Failed to restore custom services:", err);
   }
 }
 

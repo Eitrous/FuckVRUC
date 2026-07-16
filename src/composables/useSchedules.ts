@@ -71,7 +71,7 @@ export function useSchedules() {
         schedule_error.value = result.error ?? '查询失败'
         return
       }
-      console.log('querySchedules result:', result)
+      // console.log('querySchedules result:', result)
 
       schedules.value = result.items
       schedule_fetchedAt.value = result.fetchedAt

@@ -70,12 +70,14 @@ export default defineBackground(() => {
     const storeId = await getCookieStoreIdForTab(sender.tab?.id)
 
     if (message?.type === 'RUC_LOGIN_STATUS_QUERY') {
+      // console.log("Received RUC_LOGIN_STATUS_QUERY message:", message, "from sender:", sender);
       return await getLoginStatus(storeId)
     }
     if (message?.type === 'RUC_GRADES_QUERY') {
       return await fetchGrades(storeId)
     }
     if (message?.type === 'RUC_USER_INFO_QUERY') {
+      // console.log("Received RUC_USER_INFO_QUERY message:", message, "from sender:", sender);
       return await getUserInfo(storeId)
     }
     if (message?.type === 'RUC_SCHEDULE_QUERY') {

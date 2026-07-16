@@ -13,7 +13,7 @@ export async function resolveMailUrl(): Promise<string> {
             }
         }
     } catch (error) {
-        console.error('Failed to resolve mail URL:', error)
+        // console.error('Failed to resolve mail URL:', error)
     }
     return '';
     
@@ -33,7 +33,7 @@ export const builtinServices: PortalService[] = [
   {
     id: 'library',
     name: '图书馆',
-    description: '馆藏检索、借阅、数据库',
+    description: '预约座位',
     url: 'https://zwlib.ruc.edu.cn/',
     category: 'library',
     keywords: ['图书馆', '借书', '数据库', '论文'],
@@ -73,6 +73,15 @@ export const builtinServices: PortalService[] = [
     url: 'https://jw.ruc.edu.cn/Minjw/#/dashboard',
     category: 'study',
     keywords: ['暑期国际学校', '小学期'],
+    source: 'manual',
+  },
+  {
+    id: 'rucourse',
+    name: 'RUCourse',
+    description: '选课指南',
+    url: 'http://10.97.25.119',
+    category: 'study',
+    keywords: ['选课指南', 'RUCourse', '选课', 'rucourse'],
     source: 'manual',
   }
 ]

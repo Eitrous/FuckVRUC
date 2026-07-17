@@ -7,7 +7,7 @@ export default defineConfig({
   manifest: {
     manifest_version: 3,
     name: "FuckVRUC",
-    version: "0.0.2",
+    version: "0.0.4",
     description: "Extension to improve the experience of using VRUC",
     author: {
       email: "me@0x3f.io",

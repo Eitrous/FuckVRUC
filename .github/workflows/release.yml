@@ -41,6 +41,44 @@ jobs:
       - name: Build Firefox extension package
         run: pnpm run zip:firefox
 
+      - name: Import GPG signing key
+        shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d "$HOME/.gnupg"
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+      - name: Sign extension packages
+        shell: bash
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          shopt -s nullglob
+
+          packages=(
+            .output/*-chrome.zip
+            .output/*-firefox.zip
+          )
+
+          if (( ${#packages[@]} == 0 )); then
+            echo "No packages found to sign."
+            exit 1
+          fi
+
+          for package in "${packages[@]}"; do
+            printf '%s' "$GPG_PASSPHRASE" | 
+              gpg \
+                --batch \
+                --yes \
+                --no-tty \
+                --pinentry-mode loopback \
+                --passphrase-fd 0 \
+                --detach-sign \
+                --armor \
+                "$package"
+          done
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -51,4 +89,6 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             .output/*-chrome.zip
+            .output/*-chrome.zip.asc
             .output/*-firefox.zip
+            .output/*-firefox.zip.asc

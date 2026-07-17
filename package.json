@@ -2,7 +2,7 @@
   "name": "FuckVRUC",
   "description": "Extension to improve the experience of using VRUC",
   "private": false,
-  "version": "0.0.2",
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "dev": "wxt",
